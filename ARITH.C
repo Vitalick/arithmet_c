@@ -402,9 +402,9 @@ void createscreen(void)
   ClrScr();
   TextColor(GREEN);
   CprintXY(30,1,"У С Т Н Ы Й   С Ч Е Т");
-  CprintXY(30,2,"==== версия 1.01 ====");
+  CprintXY(30,2,"==== версия 1.02 ====");
   CprintXY(31,3,"ВАН");
-  CprintXY(46,3,"1997");
+  CprintXY(46,3,"1999");
   TextColor(LIGHTCYAN);
   CprintXY(3,4,"Действие:");
   CprintXY(3,5,"~~~~~~~~~");
@@ -684,7 +684,7 @@ void input(int sx,int sy,int n, int nn)
           {
             ll++;
             CprintXY(sx,sy,tmp);
-          }
+           }
           flag=1;
           break;
         case _Home_ :
@@ -1239,9 +1239,11 @@ void savebase(void)
   {
     if(NAME[k]==0x0)
       break;
+    m=0;
     for(j=0; j<32; j++)
       if((NAME[k]==symbols[0][j])||(NAME[k]==symbols[1][j]))
       {
+        m=1;
         if((NAME[k]=='ш')||(NAME[k]=='Ш')||(NAME[k]=='щ')||(NAME[k]=='щ'))
         {
           filename[i]='S';
@@ -1270,6 +1272,9 @@ void savebase(void)
           }
         }
       }
+    if(m==0)
+      filename[i]=NAME[k];
+      i++;
     if(i>6)
       break;
   }
@@ -1718,7 +1723,7 @@ void refreshvisio(void)
     CprintXY(50,12,tmp);
   else
     CprintXY(50,12,&tmp[4]);
-  if((Nvisio+13)<itog.realnumber)
+  if((Nvisio+11)<itog.realnumber)
     CprintXY(50,24,tmp);
   else
     CprintXY(50,24,&tmp[4]);

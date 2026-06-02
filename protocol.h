@@ -7,8 +7,6 @@
 #ifndef ARITHMET_PROTOCOL_H
 #define ARITHMET_PROTOCOL_H
 
-#include "dos_compat.h"
-
 /* Сравнивает DOS-время файлов, чтобы выбрать самый старый протокол при переполнении 000-999. */
 int is_older_file_time(const struct ftime *new_time, const struct ftime *old_time);
 

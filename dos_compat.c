@@ -4,10 +4,12 @@
 #include <stdlib.h>
 #include <time.h>
 
+/* randomize инициализирует rand временем запуска, как Turbo C randomize. */
 void randomize(void) {
     srand((unsigned int) time(NULL));
 }
 
+/* dos_random сохраняет поведение random(max), но защищает вызов от max <= 0. */
 int dos_random(int max) {
     if (max <= 0) {
         return 0;
@@ -16,6 +18,7 @@ int dos_random(int max) {
     return rand() % max;
 }
 
+/* delay реализует занятую задержку, чтобы не менять старую синхронную модель программы. */
 void delay(unsigned int ms) {
     const clock_t start = clock();
     const clock_t duration = (clock_t) ((double) ms * CLOCKS_PER_SEC / 1000.0);
@@ -24,15 +27,18 @@ void delay(unsigned int ms) {
     }
 }
 
+/* sound выводит BEL; frequency оставлен только для совместимости с сигнатурой Turbo C. */
 void sound(unsigned int frequency) {
     (void) frequency;
     fputc('\a', stdout);
     fflush(stdout);
 }
 
+/* nosound оставлен как пустая функция, потому что BEL не требует явного выключения. */
 void nosound(void) {
 }
 
+/* dos_getdate заполняет старую структуру date текущей локальной датой. */
 void dos_getdate(struct date *date) {
     time_t now;
     struct tm *local;
@@ -52,6 +58,7 @@ void dos_getdate(struct date *date) {
     date->da_day = (char) local->tm_mday;
 }
 
+/* gettime заполняет старую структуру time текущим локальным временем. */
 void gettime(struct time *current_time) {
     time_t now;
     struct tm *local;
@@ -72,6 +79,7 @@ void gettime(struct time *current_time) {
     current_time->ti_hund = 0;
 }
 
+/* getftime возвращает DOS-представление времени; файл пока не используется переносимой реализацией. */
 void getftime(FILE *file, struct ftime *ftime) {
     time_t now;
     struct tm *local;

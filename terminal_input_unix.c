@@ -12,6 +12,7 @@ static int terminal_configured = 0;
 static int terminal_raw_enabled = 0;
 static int terminal_signals_configured = 0;
 
+/* restore_terminal возвращает stdin из raw-режима в настройки, которые были до запуска программы. */
 static void restore_terminal(void) {
     if (terminal_raw_enabled) {
         tcsetattr(STDIN_FILENO, TCSANOW, &original_terminal);
@@ -19,12 +20,14 @@ static void restore_terminal(void) {
     }
 }
 
+/* handle_terminal_signal восстанавливает терминал перед аварийным завершением по сигналу. */
 static void handle_terminal_signal(int signal_number) {
     restore_terminal();
     RestoreTerminalScreenFromSignal();
     _exit(128 + signal_number);
 }
 
+/* init_terminal_signals ставит обработчики только один раз, чтобы повторный InitTerminal был безопасным. */
 static void init_terminal_signals(void) {
     if (terminal_signals_configured) {
         return;
@@ -36,6 +39,7 @@ static void init_terminal_signals(void) {
     signal(SIGQUIT, handle_terminal_signal);
 }
 
+/* InitTerminal переводит Unix-терминал в неблокирующий raw-режим для посимвольного чтения. */
 void InitTerminal(void) {
     struct termios raw;
 
@@ -66,6 +70,7 @@ void InitTerminal(void) {
     }
 }
 
+/* ReadTerminalByte читает один байт stdin через select с микросекундным таймаутом. */
 int ReadTerminalByte(int timeout_us) {
     unsigned char c;
     fd_set input;
@@ -92,6 +97,7 @@ int ReadTerminalByte(int timeout_us) {
     return c;
 }
 
+/* ReadTerminalKey на Unix не используется: расширенные клавиши приходят как escape-последовательности. */
 int ReadTerminalKey(char *s1, char *s2) {
     (void) s1;
     (void) s2;

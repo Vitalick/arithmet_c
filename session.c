@@ -17,6 +17,7 @@
 #include "protocol.h"
 #include "screens.h"
 
+/* run_training_session сохраняет старый крупный алгоритм сеанса без дробления на новые подфункции. */
 void run_training_session(void) {
     int ii, ll, kk, mm, cc, number, OR;
     char tmp[10];
@@ -349,4 +350,3 @@ void reset_session_result(void) {
         session_result.answers[i].elapsed_seconds = 100;
     }
 }
-

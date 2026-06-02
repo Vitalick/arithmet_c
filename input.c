@@ -26,10 +26,12 @@ int key_matches_utf8_or_latin(const char pressed_key_code[2], const char *lower,
            ((pressed_key_code[0] == upper[0]) && (pressed_key_code[1] == upper[1]));
 }
 
+/* utf8_is_continuation_byte отличает продолжение UTF-8 символа от начала экранной ячейки. */
 static int utf8_is_continuation_byte(char c) {
     return (((unsigned char) c & 0xC0) == 0x80);
 }
 
+/* utf8_display_width считает экранную ширину подстроки в знакоместах, а не в байтах. */
 static int utf8_display_width(const char *text, int bytes) {
     int i;
     int len = 0;
@@ -43,6 +45,7 @@ static int utf8_display_width(const char *text, int bytes) {
     return len;
 }
 
+/* utf8_previous_char_pos возвращает позицию начала предыдущего UTF-8 символа. */
 static int utf8_previous_char_pos(const char *text, int pos) {
     if (pos <= 0) {
         return 0;
@@ -56,6 +59,7 @@ static int utf8_previous_char_pos(const char *text, int pos) {
     return pos;
 }
 
+/* utf8_next_char_pos возвращает позицию начала следующего UTF-8 символа в пределах буфера. */
 static int utf8_next_char_pos(const char *text, int pos, int limit) {
     if ((pos >= limit) || (text[pos] == 0x0)) {
         return pos;
@@ -69,6 +73,7 @@ static int utf8_next_char_pos(const char *text, int pos, int limit) {
     return pos;
 }
 
+/* input_cursor_screen_x переводит байтовую позицию поля в экранную X-координату курсора. */
 static int input_cursor_screen_x(int sx, const char *text, int pos, int is_utf8) {
     if (is_utf8) {
         return sx + utf8_display_width(text, pos);

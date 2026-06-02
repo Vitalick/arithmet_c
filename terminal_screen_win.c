@@ -13,6 +13,7 @@ static UINT original_input_code_page;
 static int terminal_console_configured = 0;
 static int terminal_screen_signals_initialized = 0;
 
+/* ConfigureTerminalConsole включает UTF-8 и ANSI-последовательности в Windows Console. */
 void ConfigureTerminalConsole(void) {
     HANDLE output_handle;
     DWORD output_mode;
@@ -38,6 +39,7 @@ void ConfigureTerminalConsole(void) {
     }
 }
 
+/* RestoreTerminalConsole возвращает code page и output mode, сохраненные при запуске. */
 void RestoreTerminalConsole(void) {
     HANDLE output_handle;
 
@@ -54,6 +56,7 @@ void RestoreTerminalConsole(void) {
     terminal_console_configured = 0;
 }
 
+/* WriteTerminalSignalSequence пишет последовательность через WinAPI из console control handler. */
 void WriteTerminalSignalSequence(const char *sequence, size_t length) {
     DWORD written;
     HANDLE output_handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -63,6 +66,7 @@ void WriteTerminalSignalSequence(const char *sequence, size_t length) {
     }
 }
 
+/* handle_terminal_screen_control восстанавливает экран перед закрытием или Ctrl+C. */
 static BOOL WINAPI handle_terminal_screen_control(DWORD control_type) {
     switch (control_type) {
         case CTRL_C_EVENT:
@@ -78,6 +82,7 @@ static BOOL WINAPI handle_terminal_screen_control(DWORD control_type) {
     }
 }
 
+/* InitTerminalScreenSignals регистрирует обработчик завершения консоли для экранного слоя. */
 void InitTerminalScreenSignals(volatile sig_atomic_t *terminal_size_changed) {
     (void) terminal_size_changed;
 
@@ -89,6 +94,7 @@ void InitTerminalScreenSignals(volatile sig_atomic_t *terminal_size_changed) {
     SetConsoleCtrlHandler(handle_terminal_screen_control, TRUE);
 }
 
+/* UpdateTerminalSize получает текущий размер видимого окна консоли. */
 void UpdateTerminalSize(void) {
     CONSOLE_SCREEN_BUFFER_INFO info;
     HANDLE output_handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -99,6 +105,7 @@ void UpdateTerminalSize(void) {
     }
 }
 
+/* PollTerminalResize вручную проверяет resize, потому что в Windows нет SIGWINCH. */
 int PollTerminalResize(void) {
     int old_cols = TerminalCols;
     int old_rows = TerminalRows;

@@ -15,6 +15,7 @@
 #include "screens.h"
 #include "ui_helpers.h"
 
+/* create_main_screen рисует статичную разметку стартового экрана и текущие настройки. */
 void create_main_screen(void) {
     int ii;
     char tmp[10];
@@ -75,6 +76,7 @@ void create_main_screen(void) {
     CprintXY(72, 8, tmp);
 }
 
+/* refresh_operation_status обновляет индикаторы включенных арифметических операций. */
 void refresh_operation_status(void) {
     int ii;
 
@@ -84,6 +86,7 @@ void refresh_operation_status(void) {
         CprintXY(2, 6 + ii, yes_no_labels[app_settings[ii]]);
 }
 
+/* clear_exercise_area очищает зоны примера, проверки и баннеров между заданиями. */
 void clear_exercise_area(void) {
     int ll;
     char tmps[30];
@@ -104,6 +107,7 @@ void clear_exercise_area(void) {
     }
 }
 
+/* wait_after_answer показывает верный ответ и ждет Tab/F10 перед продолжением. */
 int wait_after_answer(int result, int right) {
     char tmp[10];
     int tmpOR;
@@ -136,6 +140,7 @@ int wait_after_answer(int result, int right) {
     return (tmpOR);
 }
 
+/* show_session_results открывает вторую видеостраницу и обрабатывает клавиши прокрутки протокола. */
 void show_session_results(void) {
     int kk;
     char ks[2];
@@ -212,6 +217,7 @@ void show_session_results(void) {
     active_screen = 1;
 }
 
+/* create_results_screen рисует заголовок и сводную часть экрана результата. */
 void create_results_screen(void) {
     char tmp[100];
     int i, j, k, l, m;
@@ -299,6 +305,7 @@ void create_results_screen(void) {
     }
 }
 
+/* refresh_results_screen перерисовывает видимый фрагмент списка решенных примеров. */
 void refresh_results_screen(void) {
     int i, l, m;
     char tmp[80];

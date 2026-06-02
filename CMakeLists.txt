@@ -20,7 +20,10 @@ set(ARITHMET_SOURCES
         session.c
         ui_helpers.c
         conio.c
+        conio_state.c
+        conio_terminal.c
         asm.c
+        keyboard_mapping.c
         mouse.c
         dos_compat.c
 )

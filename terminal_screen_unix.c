@@ -8,21 +8,26 @@
 static int terminal_screen_signals_initialized = 0;
 static volatile sig_atomic_t *terminal_size_changed_ptr = NULL;
 
+/* ConfigureTerminalConsole на Unix не требует отдельной настройки вывода. */
 void ConfigureTerminalConsole(void) {
 }
 
+/* RestoreTerminalConsole на Unix не хранит дополнительных настроек вывода. */
 void RestoreTerminalConsole(void) {
 }
 
+/* WriteTerminalSignalSequence пишет ANSI-последовательность через async-signal-safe write. */
 void WriteTerminalSignalSequence(const char *sequence, size_t length) {
     write(STDOUT_FILENO, sequence, length);
 }
 
+/* handle_terminal_screen_signal восстанавливает экран при завершении сигналом. */
 static void handle_terminal_screen_signal(int signal_number) {
     RestoreTerminalScreenFromSignal();
     _exit(128 + signal_number);
 }
 
+/* handle_terminal_resize_signal сообщает conio, что логический экран надо перерисовать. */
 static void handle_terminal_resize_signal(int signal_number) {
     (void) signal_number;
     if (terminal_size_changed_ptr != NULL) {
@@ -30,6 +35,7 @@ static void handle_terminal_resize_signal(int signal_number) {
     }
 }
 
+/* InitTerminalScreenSignals ставит обработчики завершения и SIGWINCH для Unix-терминала. */
 void InitTerminalScreenSignals(volatile sig_atomic_t *terminal_size_changed) {
     if (terminal_screen_signals_initialized) {
         return;
@@ -43,6 +49,7 @@ void InitTerminalScreenSignals(volatile sig_atomic_t *terminal_size_changed) {
     signal(SIGWINCH, handle_terminal_resize_signal);
 }
 
+/* UpdateTerminalSize читает размер окна stdout через ioctl(TIOCGWINSZ). */
 void UpdateTerminalSize(void) {
     struct winsize size;
 
@@ -52,6 +59,7 @@ void UpdateTerminalSize(void) {
     }
 }
 
+/* PollTerminalResize на Unix не нужен, потому что resize приходит через SIGWINCH. */
 int PollTerminalResize(void) {
     return 0;
 }

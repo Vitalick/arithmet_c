@@ -18,6 +18,7 @@
 #include "session.h"
 #include "ui_helpers.h"
 
+/* main инициализирует совместимый DOS-экран, загружает настройки и держит цикл стартового меню. */
 int main(void) {
     int i, flag;
 
@@ -228,4 +229,3 @@ int main(void) {
 
     return 0;
 }
-

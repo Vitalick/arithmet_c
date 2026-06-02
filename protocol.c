@@ -5,13 +5,13 @@
  */
 
 #include <stdio.h>
-#include <string.h>
 
 #include "app_state.h"
 #include "dos_compat.h"
 #include "asm.h"
 #include "protocol.h"
 
+/* transliterate_utf8_russian_letter переводит одну русскую букву имени в DOS-совместимый латинский фрагмент. */
 static const char *transliterate_utf8_russian_letter(const char *text, int *bytes) {
     int i;
     static const char *upper[] = {

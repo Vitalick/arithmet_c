@@ -1,4 +1,5 @@
 #include "conio.h"
+#include "asm.h"
 #include "keys.h"
 #include "terminal_platform.h"
 
@@ -17,6 +18,7 @@ static unsigned char input_buffer[8];
 static int input_buffer_pos = 0;
 static int input_buffer_len = 0;
 
+/* restore_terminal возвращает режим Windows Console Input к состоянию до запуска программы. */
 static void restore_terminal(void) {
     if (terminal_raw_enabled) {
         SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), original_input_mode);
@@ -24,6 +26,7 @@ static void restore_terminal(void) {
     }
 }
 
+/* handle_console_signal восстанавливает терминал перед закрытием консоли или Ctrl+C. */
 static BOOL WINAPI handle_console_signal(DWORD control_type) {
     switch (control_type) {
         case CTRL_C_EVENT:
@@ -40,6 +43,7 @@ static BOOL WINAPI handle_console_signal(DWORD control_type) {
     }
 }
 
+/* init_terminal_signals регистрирует Windows console control handler один раз. */
 static void init_terminal_signals(void) {
     if (terminal_signals_configured) {
         return;
@@ -49,6 +53,7 @@ static void init_terminal_signals(void) {
     SetConsoleCtrlHandler(handle_console_signal, TRUE);
 }
 
+/* InitTerminal отключает line/echo/processed input, чтобы читать клавиши напрямую. */
 void InitTerminal(void) {
     HANDLE input_handle;
     DWORD raw_mode;
@@ -79,6 +84,7 @@ void InitTerminal(void) {
     }
 }
 
+/* push_input_byte добавляет байт в небольшой буфер UTF-8 символа. */
 static void push_input_byte(unsigned char c) {
     if (input_buffer_len < (int) sizeof(input_buffer)) {
         input_buffer[input_buffer_len] = c;
@@ -86,6 +92,7 @@ static void push_input_byte(unsigned char c) {
     }
 }
 
+/* push_utf8_char кодирует Windows WCHAR в UTF-8 байты для общего кода ввода имени. */
 static void push_utf8_char(WCHAR ch) {
     if (ch < 0x80) {
         push_input_byte((unsigned char) ch);
@@ -99,6 +106,7 @@ static void push_utf8_char(WCHAR ch) {
     }
 }
 
+/* map_windows_extended_key переводит scan code Windows Console в старую DOS-константу клавиши. */
 static int map_windows_extended_key(int c, char *s1, char *s2) {
     switch (c) {
         case 0x47:
@@ -148,6 +156,7 @@ static int map_windows_extended_key(int c, char *s1, char *s2) {
     }
 }
 
+/* ReadTerminalByte отдает байты, подготовленные ReadTerminalKey для многобайтового UTF-8 символа. */
 int ReadTerminalByte(int timeout_us) {
     (void) timeout_us;
 
@@ -158,6 +167,7 @@ int ReadTerminalByte(int timeout_us) {
     return -1;
 }
 
+/* ReadTerminalKey читает INPUT_RECORD и возвращает готовый DOS-код клавиши или UTF-8 байты символа. */
 int ReadTerminalKey(char *s1, char *s2) {
     HANDLE input_handle;
     int ascii_key;

@@ -4,14 +4,13 @@
  * Содержит небольшие общие операции интерфейса, которые нужны нескольким экранам.
  */
 
-#include <string.h>
-
 #include <conio.h>
 #include "asm.h"
 #include "app_state.h"
 #include "screens.h"
 #include "ui_helpers.h"
 
+/* redraw_active_screen_for_resize выбирает нужную перерисовку по текущей видеостранице приложения. */
 void redraw_active_screen_for_resize(void) {
     if (active_screen == 2) {
         create_results_screen();

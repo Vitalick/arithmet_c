@@ -1,14 +1,16 @@
 #include <conio.h>
 #include <dos.h>
-#include <io.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include "keys.h"
-#include "conio.h"
 #include "mouse.h"
 #include "arith.h"
+
+// mb replaces
+// #include <unistd.h> // instead io.h
+// #include <fcntl.h> // instead io.h
 
 
 char *RR[] =

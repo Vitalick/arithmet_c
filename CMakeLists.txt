@@ -13,6 +13,18 @@ set(ARITHMET_SOURCES
         dos_compat.c
 )
 
+if (WIN32)
+    list(APPEND ARITHMET_SOURCES
+            terminal_input_win.c
+            terminal_screen_win.c
+    )
+else()
+    list(APPEND ARITHMET_SOURCES
+            terminal_input_unix.c
+            terminal_screen_unix.c
+    )
+endif()
+
 set_source_files_properties(${ARITHMET_SOURCES} PROPERTIES LANGUAGE C)
 
 add_executable(arithmet ${ARITHMET_SOURCES})

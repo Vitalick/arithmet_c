@@ -14,7 +14,7 @@
 // #include <fcntl.h> // instead io.h
 
 
-char *RR[] =
+char *banner_brave[] =
 {
     "█   █    ██      ███    ██     ████    ████   █  █    █",
     "██ ██   █  █    █  █   █  █    █  █    █      █  █    █",
@@ -23,7 +23,7 @@ char *RR[] =
     "█   █    ██    ██  █    ██    ██████   ████   █████   █",
     "                              █    █              █"
 };
-char *LL[] =
+char *banner_wrong[] =
 {
     "█  █   ████   ███    ████   ███    █  █    ██",
     "█  █   █      █  █   █      █  █   █  █   █  █",
@@ -31,7 +31,7 @@ char *LL[] =
     "█  █   █      █  █   █      █      █  █   █  █",
     "█  █   ████   ███    ████   █      █  █    ██    █   █   █"
 };
-char *TT[] =
+char *banner_time_elapsed[] =
 {
     "███  ███  ████ █   █  ███   ███  █    █ █ █ █   ███  ██",
     "█  █ █  █ █    ██ ██ █  █   █  █ █    █ █ █ █  █  █ █  █",
@@ -39,7 +39,7 @@ char *TT[] =
     "█  █ █    █    █   █   ██   █  █ █  █ █ █ █ █  █  █ █  █",
     "███  █    ████ █   █  █ █   ███  ███  █ █████ ██  █  ██"
 };
-char *EE[] =
+char *banner_your_grade[] =
 {
     "███   ██  █ █ █  ██     ██  █  █  ████ █  █ █  █  ██",
     "█  █ █  █ █ █ █ █  █   █  █ █  █  █    █  █ █ █  █  █",
@@ -48,7 +48,7 @@ char *EE[] =
     "███  █  █ █████ █  █    ██  █████ ████ █  █ █  █ █  █",
     "                                █"
 };
-char *BB1[] =
+char *banner_num_1[] =
 {
     "   █",
     "  ██",
@@ -56,7 +56,7 @@ char *BB1[] =
     "   █",
     "   █"
 };
-char *BB2[] =
+char *banner_num_2[] =
 {
     " ██",
     "█  █",
@@ -64,7 +64,7 @@ char *BB2[] =
     " █",
     "████"
 };
-char *BB3[] =
+char *banner_num_3[] =
 {
     " ██",
     "█  █",
@@ -72,7 +72,7 @@ char *BB3[] =
     "█  █",
     " ██"
 };
-char *BB4[] =
+char *banner_num_4[] =
 {
     "█  █",
     "█  █",
@@ -80,7 +80,7 @@ char *BB4[] =
     "   █",
     "   █"
 };
-char *BB5[] =
+char *banner_num_5[] =
 {
     "████",
     "█",
@@ -1028,13 +1028,14 @@ void control(void) {
                     CprintXY(27, 15, tmps);
                     break;
             }
-            TextColor(LIGHTGREEN);
             if (operation[8] == result) {
+                TextColor(GREEN);
                 for (kk = 0; kk < 6; kk++)
-                    CprintXY(14, 17 + kk, RR[kk]);
+                    CprintXY(14, 17 + kk, banner_brave[kk]);
             } else {
+                TextColor(RED);
                 for (kk = 0; kk < 5; kk++)
-                    CprintXY(11, 17 + kk, LL[kk]);
+                    CprintXY(11, 17 + kk, banner_wrong[kk]);
             }
             OR = outresult(result, right);
             if (OR == _F10_)
@@ -1045,7 +1046,7 @@ void control(void) {
             } else {
                 if ((operation[8] == -5) || (operation[8] == -5)) {
                     for (kk = 0; kk < 5; kk++)
-                        CprintXY(12, 17 + kk, TT[kk]);
+                        CprintXY(12, 17 + kk, banner_time_elapsed[kk]);
                     OR = outresult(result, right);
                     if (OR == _F10_)
                         goto end;
@@ -1067,27 +1068,27 @@ end:
         ball = 1;
     clearplace();
     for (kk = 0; kk < 6; kk++)
-        CprintXY(10, 17 + kk, EE[kk]);
+        CprintXY(10, 17 + kk, banner_your_grade[kk]);
     switch (ball) {
         case 1:
             for (kk = 0; kk < 5; kk++)
-                CprintXY(66, 17 + kk, BB1[kk]);
+                CprintXY(66, 17 + kk, banner_num_1[kk]);
             break;
         case 2:
             for (kk = 0; kk < 5; kk++)
-                CprintXY(66, 17 + kk, BB2[kk]);
+                CprintXY(66, 17 + kk, banner_num_2[kk]);
             break;
         case 3:
             for (kk = 0; kk < 5; kk++)
-                CprintXY(66, 17 + kk, BB3[kk]);
+                CprintXY(66, 17 + kk, banner_num_3[kk]);
             break;
         case 4:
             for (kk = 0; kk < 5; kk++)
-                CprintXY(66, 17 + kk, BB4[kk]);
+                CprintXY(66, 17 + kk, banner_num_4[kk]);
             break;
         case 5:
             for (kk = 0; kk < 5; kk++)
-                CprintXY(66, 17 + kk, BB5[kk]);
+                CprintXY(66, 17 + kk, banner_num_5[kk]);
             break;
     }
     itog.ball = ball;

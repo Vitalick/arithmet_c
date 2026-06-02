@@ -232,6 +232,20 @@ static int input_screen_x(int sx, const char *text, int pos, int is_utf8) {
     return sx + pos;
 }
 
+static int centered_screen_x(const char *text) {
+    int width = utf8_display_len(text, strlen(text));
+
+    if (width >= 80) {
+        return 1;
+    }
+
+    return (80 - width) / 2 + 1;
+}
+
+static void CprintCentered(int y, char *text) {
+    CprintXY(centered_screen_x(text), y, text);
+}
+
 int main(void) {
     int i, flag;
 
@@ -443,15 +457,17 @@ int main(void) {
 void createscreen(void) {
     int ii;
     char tmp[10];
+    int title_x;
 
     TextColor(YELLOW);
     TextBackGround(BLUE);
     ClrScr();
     TextColor(GREEN);
-    CprintXY(30, 1, "У С Т Н Ы Й    С Ч Е Т");
-    CprintXY(30, 2, "==== версия 1.2.2 ====");
-    CprintXY(31, 3, "ВАН");
-    CprintXY(47, 3, "1999");
+    title_x = centered_screen_x("У С Т Н Ы Й    С Ч Е Т");
+    CprintXY(title_x, 1, "У С Т Н Ы Й    С Ч Е Т");
+    CprintCentered(2, "==== версия 1.2.2 ====");
+    CprintXY(title_x + 1, 3, "ВАН");
+    CprintXY(title_x + 17, 3, "1999");
     TextColor(LIGHTCYAN);
     CprintXY(3, 4, "Действие:");
     CprintXY(3, 5, "~~~~~~~~~");
@@ -1482,8 +1498,8 @@ void createvisio(void) {
     TextBackGround(BLUE);
     ClrScr();
     TextColor(GREEN);
-    CprintXY(31, 1, "Р Е З У Л Ь Т А Т Ы");
-    CprintXY(31, 2, "===================");
+    CprintCentered(1, "Р Е З У Л Ь Т А Т Ы");
+    CprintCentered(2, "===================");
     TextColor(LIGHTCYAN);
     CprintXY(1, 3, "Имя:");
     CprintXY(1, 4, "Действия:");

@@ -306,6 +306,7 @@ int Getc(char *s1, char *s2) {
     int c2;
 
     init_terminal();
+    RefreshTerminalSize();
 
     c = read_byte(0);
     if (c < 0) {

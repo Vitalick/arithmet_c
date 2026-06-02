@@ -5,7 +5,11 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
+
+#define LOGICAL_SCREEN_WIDTH 80
+#define LOGICAL_SCREEN_HEIGHT 25
 
 static char ScreenBuffer[4096 * 8];
 char *Screen = ScreenBuffer;
@@ -14,10 +18,36 @@ char ATTRIBUTE = 0xf;
 unsigned int CX = 0, CY = 0;
 int LC = 1, TC = 1, RC = 80, DC = 25;
 int lenscr = 80, heiscr = 25;
+int TerminalCols = LOGICAL_SCREEN_WIDTH, TerminalRows = LOGICAL_SCREEN_HEIGHT;
+int ScreenOffsetX = 0, ScreenOffsetY = 0;
 
 static int cursor_visible = 1;
 static int terminal_screen_initialized = 0;
 static int terminal_screen_signals_initialized = 0;
+static volatile sig_atomic_t terminal_size_changed = 1;
+
+static void apply_attribute(void);
+static void move_terminal_cursor(void);
+
+static int terminal_cell_visible(void) {
+    unsigned int x = ScreenOffsetX + CX + 1;
+    unsigned int y = ScreenOffsetY + CY + 1;
+
+    return (x >= 1) && (x <= (unsigned int) TerminalCols) &&
+           (y >= 1) && (y <= (unsigned int) TerminalRows);
+}
+
+static void update_terminal_size(void) {
+    struct winsize size;
+
+    if ((ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == 0) && (size.ws_col > 0) && (size.ws_row > 0)) {
+        TerminalCols = size.ws_col;
+        TerminalRows = size.ws_row;
+    }
+
+    ScreenOffsetX = (TerminalCols > LOGICAL_SCREEN_WIDTH) ? ((TerminalCols - LOGICAL_SCREEN_WIDTH) / 2) : 0;
+    ScreenOffsetY = (TerminalRows > LOGICAL_SCREEN_HEIGHT) ? ((TerminalRows - LOGICAL_SCREEN_HEIGHT) / 2) : 0;
+}
 
 void RestoreTerminalScreen(void) {
     printf("\033[0m\033[?25h\033[?1049l");
@@ -35,6 +65,11 @@ static void handle_terminal_screen_signal(int signal_number) {
     _exit(128 + signal_number);
 }
 
+static void handle_terminal_resize_signal(int signal_number) {
+    (void) signal_number;
+    terminal_size_changed = 1;
+}
+
 static void init_terminal_screen_signals(void) {
     if (terminal_screen_signals_initialized) {
         return;
@@ -44,6 +79,7 @@ static void init_terminal_screen_signals(void) {
     signal(SIGINT, handle_terminal_screen_signal);
     signal(SIGTERM, handle_terminal_screen_signal);
     signal(SIGQUIT, handle_terminal_screen_signal);
+    signal(SIGWINCH, handle_terminal_resize_signal);
 }
 
 static void init_terminal_screen(void) {
@@ -53,6 +89,8 @@ static void init_terminal_screen(void) {
 
     terminal_screen_initialized = 1;
     init_terminal_screen_signals();
+    update_terminal_size();
+    terminal_size_changed = 0;
     printf("\033[?1049h");
     printf("\033[2J");
     printf("\033[H");
@@ -69,6 +107,61 @@ static int ansi_color(int color) {
     return colors[color & 0x0F];
 }
 
+static void render_visible_screen(void) {
+    unsigned int page = NPV * 4096;
+    unsigned int row;
+    unsigned int col;
+    int current_attribute = -1;
+    int utf8_visible = 0;
+
+    printf("\033[0m");
+    printf("\033[2J");
+    for (row = 0; row < LOGICAL_SCREEN_HEIGHT; row++) {
+        if ((ScreenOffsetY + row + 1) > (unsigned int) TerminalRows) {
+            break;
+        }
+
+        printf("\033[%u;%uH", ScreenOffsetY + row + 1, ScreenOffsetX + 1);
+        utf8_visible = 0;
+        for (col = 0; col < LOGICAL_SCREEN_WIDTH; col++) {
+            unsigned int index = page + (row * LOGICAL_SCREEN_WIDTH + col) * 2;
+            unsigned char character = (unsigned char) Screen[index];
+            unsigned char attribute = (unsigned char) Screen[index + 1];
+            int is_continuation = (character & 0xC0) == 0x80;
+            int is_visible = ((ScreenOffsetX + col + 1) <= (unsigned int) TerminalCols);
+
+            if (attribute != current_attribute) {
+                current_attribute = attribute;
+                printf("\033[%dm", ansi_color(attribute & 0x0F));
+            }
+
+            if (is_visible || (is_continuation && utf8_visible)) {
+                fputc(character == 0x0 ? ' ' : character, stdout);
+            }
+
+            if (!is_continuation) {
+                utf8_visible = is_visible;
+            }
+        }
+    }
+    printf("\033[0m");
+    apply_attribute();
+    move_terminal_cursor();
+}
+
+int RefreshTerminalSize(void) {
+    init_terminal_screen();
+    if (!terminal_size_changed) {
+        return 0;
+    }
+
+    terminal_size_changed = 0;
+    update_terminal_size();
+    render_visible_screen();
+    fflush(stdout);
+    return 1;
+}
+
 static void apply_attribute(void) {
     int fg = ATTRIBUTE & 0x0F;
 
@@ -77,8 +170,27 @@ static void apply_attribute(void) {
 }
 
 static void move_terminal_cursor(void) {
+    unsigned int x;
+    unsigned int y;
+
     init_terminal_screen();
-    printf("\033[%u;%uH", CY + 1, CX + 1);
+    x = ScreenOffsetX + CX + 1;
+    y = ScreenOffsetY + CY + 1;
+
+    if (x < 1) {
+        x = 1;
+    }
+    if (y < 1) {
+        y = 1;
+    }
+    if (x > (unsigned int) TerminalCols) {
+        x = TerminalCols;
+    }
+    if (y > (unsigned int) TerminalRows) {
+        y = TerminalRows;
+    }
+
+    printf("\033[%u;%uH", y, x);
 }
 
 static void flush_terminal(void) {
@@ -147,25 +259,32 @@ void GotoXY(int x, int y) {
 void Cprint(char *String) {
     int i = 0, j = NP * 4096 + CY * 160 + CX * 2;
     int k;
+    int utf8_visible = 0;
 
     move_terminal_cursor();
     apply_attribute();
     while (String[i] != 0x0) {
         unsigned char ch = (unsigned char) String[i];
+        int is_continuation = (ch & 0xC0) == 0x80;
 
         if (((CX + 1) >= LC) && ((CX + 1) <= RC) && ((CY + 1) >= TC) && ((CY + 1) <= DC)) {
             if (ch >= 0x20) {
                 Screen[j + 1] = ATTRIBUTE;
                 Screen[j] = String[i];
-                fputc(String[i], stdout);
-                if ((ch & 0xC0) != 0x80) {
+                if (terminal_cell_visible() || (is_continuation && utf8_visible)) {
+                    fputc(String[i], stdout);
+                }
+                if (!is_continuation) {
+                    utf8_visible = terminal_cell_visible();
                     if (CX < 80)
                         CX++;
                     else {
                         if (CY < 25) {
                             CX = 0;
                             CY++;
-                            fputc('\n', stdout);
+                            if (terminal_cell_visible()) {
+                                fputc('\n', stdout);
+                            }
                         } else
                             break;
                     }
@@ -175,7 +294,9 @@ void Cprint(char *String) {
                     case '\r': {
                         CX = LC - 1;
                         j = NP * 4096 + (CY + TC - 1) * 160 + (CX + LC - 1) * 2;
-                        fputc('\r', stdout);
+                        if (terminal_cell_visible()) {
+                            fputc('\r', stdout);
+                        }
                     }
                     break;
                     case '\n': {
@@ -184,7 +305,9 @@ void Cprint(char *String) {
                         }
                         CY++;
                         j = NP * 4096 + (CY + TC - 1) * 160 + (CX + LC - 1) * 2;
-                        fputc('\n', stdout);
+                        if (terminal_cell_visible()) {
+                            fputc('\n', stdout);
+                        }
                     }
                     break;
                     case '\t': {
@@ -193,14 +316,18 @@ void Cprint(char *String) {
                             if ((CX >= LC) && (CX <= RC) && (CY >= TC) && (CY <= DC))
                                 k++;
                             CX++;
-                            fputc(' ', stdout);
+                            if (terminal_cell_visible()) {
+                                fputc(' ', stdout);
+                            }
                             if (CX < 80)
                                 CX++;
                             else {
                                 if (CY < 25) {
                                     CX = 0;
                                     CY++;
-                                    fputc('\n', stdout);
+                                    if (terminal_cell_visible()) {
+                                        fputc('\n', stdout);
+                                    }
                                 } else
                                     break;
                             }
@@ -216,7 +343,9 @@ void Cprint(char *String) {
                 if (CY < 25) {
                     CX = 0;
                     CY++;
-                    fputc('\n', stdout);
+                    if (terminal_cell_visible()) {
+                        fputc('\n', stdout);
+                    }
                 } else
                     break;
             }
@@ -239,7 +368,9 @@ void GetCharXY(int x, int y, char s) {
     Screen[j + 1] = ATTRIBUTE;
     Screen[j] = s;
     apply_attribute();
-    fputc(s, stdout);
+    if (terminal_cell_visible()) {
+        fputc(s, stdout);
+    }
     flush_terminal();
 }
 
@@ -249,7 +380,9 @@ void GetChar(char s) {
     Screen[j + 1] = ATTRIBUTE;
     Screen[j] = s;
     apply_attribute();
-    fputc(s, stdout);
+    if (terminal_cell_visible()) {
+        fputc(s, stdout);
+    }
     flush_terminal();
 }
 

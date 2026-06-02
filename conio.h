@@ -26,6 +26,7 @@
 void _setcursortype(int);
 void RestoreTerminalScreen(void);
 void RestoreTerminalScreenFromSignal(void);
+int RefreshTerminalSize(void);
 void Npage(int, int); // Установка активной видеостраницы
 //          A   B
 // A:  номер видеостраницы
@@ -65,5 +66,7 @@ extern char ATTRIBUTE; // текущие атрибуты вывода
 extern unsigned int CX, CY; // текущие координаты
 extern int LC, TC, RC, DC; // границы текущего окна вывода
 extern int lenscr, heiscr; // длина и высота текущего окна вывода
+extern int TerminalCols, TerminalRows; // текущий размер терминала
+extern int ScreenOffsetX, ScreenOffsetY; // смещение логического экрана 80x25
 
 #endif

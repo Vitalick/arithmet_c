@@ -1,29 +1,23 @@
-#include <conio.h>
-#include <dos.h>
+#include "conio.h"
+#include "dos_compat.h"
+#include "asm.h"
 
-char *Screen = MK_FP(0xB800, 0);
+static char ScreenBuffer[4096 * 8];
+char *Screen = ScreenBuffer;
 int NP = 0, NPV = 0;
 char ATTRIBUTE = 0xf;
 unsigned int CX = 0, CY = 0;
 int LC = 1, TC = 1, RC = 80, DC = 25;
 int lenscr = 80, heiscr = 25;
 
-#include "conio.h"
+void _setcursortype(int type) {
+    (void) type;
+}
 
 void Npage(int np, int ind) {
-    char i = CHR(np);
-
     NP = np;
     if (ind == 1) {
         NPV = np;
-        asm
-        {
-            mov al, i
-            mov ah,
-            5
-      int
-            10h
-        }
     }
 }
 
@@ -64,8 +58,6 @@ void GotoXY(int x, int y) {
 void Cprint(char *String) {
     int i = 0, j = NP * 4096 + CY * 160 + CX * 2;
     int k;
-    unsigned char lc = CHR(LC - 1), tc = CHR(TC - 1), rc = CHR(RC - 1), dc = CHR(DC - 1);
-
     while (String[i] != 0x0) {
         if (((CX + 1) >= LC) && ((CX + 1) <= RC) && ((CY + 1) >= TC) && ((CY + 1) <= DC)) {
             if (String[i] >= 0x20) {
@@ -89,20 +81,6 @@ void Cprint(char *String) {
                     break;
                     case '\n': {
                         if ((CY + 1) >= DC) {
-                            asm
-                            {
-                                mov ah,
-                                6
-                                mov al,
-                                1
-                                mov bh, ATTRIBUTE
-                                mov ch, tc
-                                mov cl, lc
-                                mov dh, dc
-                                mov dl, rc
-                int
-                                10h
-                            }
                             CY--;
                         }
                         CY++;

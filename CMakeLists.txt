@@ -10,6 +10,7 @@ set(ARITHMET_SOURCES
         conio.c
         asm.c
         mouse.c
+        dos_compat.c
 )
 
 set_source_files_properties(${ARITHMET_SOURCES} PROPERTIES LANGUAGE C)

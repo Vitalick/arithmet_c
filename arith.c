@@ -1,9 +1,10 @@
 #include <conio.h>
-#include <dos.h>
+#include "dos_compat.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "asm.h"
 #include "keys.h"
 #include "mouse.h"
 #include "arith.h"
@@ -741,7 +742,7 @@ void control(void) {
             tmps[ll] = 0x0;
         clearplace();
         if (n != 1) {
-            number = random(n);
+            number = dos_random(n);
             ll = -1;
             kk = -1;
             while (ll != number) {
@@ -754,24 +755,24 @@ void control(void) {
         switch (number) {
             case 0:
             newadd:
-                result = random(operation[6] - operation[5]) + operation[5];
-                arg1 = random(result);
+                result = dos_random(operation[6] - operation[5]) + operation[5];
+                arg1 = dos_random(result);
                 arg2 = result - arg1;
                 if ((arg1 == 0) || (arg2 == 0) || (result == 0))
                     goto newadd;
                 break;
             case 1:
             newsub:
-                arg1 = random(operation[6] - operation[5]) + operation[5];
-                arg2 = random(arg1);
+                arg1 = dos_random(operation[6] - operation[5]) + operation[5];
+                arg2 = dos_random(arg1);
                 result = arg1 - arg2;
                 if ((arg1 == 0) || (arg2 == 0) || (result == 0))
                     goto newsub;
                 break;
             case 2:
             newresult:
-                result = random(operation[6] - operation[5]) + operation[5];
-                arg1 = random(result);
+                result = dos_random(operation[6] - operation[5]) + operation[5];
+                arg1 = dos_random(result);
                 if (arg1 == 0)
                     arg1 = 1;
                 arg2 = result / arg1;
@@ -801,8 +802,8 @@ void control(void) {
             case 3:
             case 4:
             newarg1:
-                arg1 = random(operation[6] - operation[5]) + operation[5];
-                arg2 = random(arg1 / 2) + 1;
+                arg1 = dos_random(operation[6] - operation[5]) + operation[5];
+                arg2 = dos_random(arg1 / 2) + 1;
                 if (arg2 == 0)
                     arg2 = 1;
                 result = arg1 / arg2;
@@ -829,7 +830,7 @@ void control(void) {
                 if ((arg1 == 1) || (arg2 == 1) || (result == 1))
                     goto newarg1;
                 if (number == 4) {
-                    kk = random(arg2 - 1) + 1;
+                    kk = dos_random(arg2 - 1) + 1;
                     arg1 += kk;
                 }
                 break;
@@ -1160,9 +1161,9 @@ void savebase(void) {
     sprintf(&filename[9], "%03i", j);
     FILE = NULL;
     FILE = fopen(filename, "rb");
-    getftime(fileno(FILE), &FT);
+    getftime(FILE, &FT);
     while (FILE != NULL) {
-        getftime(fileno(FILE), &FTnew);
+        getftime(FILE, &FTnew);
         l = 0;
         if (FTnew.ft_year < FT.ft_year)
             l = 1;
@@ -1197,7 +1198,7 @@ void savebase(void) {
             }
         }
         if (l == 1) {
-            getftime(fileno(FILE), &FT);
+            getftime(FILE, &FT);
             k = j;
         }
         fclose(FILE);

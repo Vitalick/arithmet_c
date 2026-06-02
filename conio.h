@@ -1,6 +1,29 @@
-#include <dos.h>
-#include "asm.h"
+#ifndef ARITHMET_CONIO_H
+#define ARITHMET_CONIO_H
 
+#include "dos_compat.h"
+
+#define BLACK 0
+#define BLUE 1
+#define GREEN 2
+#define CYAN 3
+#define RED 4
+#define MAGENTA 5
+#define BROWN 6
+#define LIGHTGRAY 7
+#define DARKGRAY 8
+#define LIGHTBLUE 9
+#define LIGHTGREEN 10
+#define LIGHTCYAN 11
+#define LIGHTRED 12
+#define LIGHTMAGENTA 13
+#define YELLOW 14
+#define WHITE 15
+
+#define _NOCURSOR 0
+#define _NORMALCURSOR 1
+
+void _setcursortype(int);
 void Npage(int, int); // Установка активной видеостраницы
 //          A   B
 // A:  номер видеостраницы
@@ -40,3 +63,5 @@ extern char ATTRIBUTE; // текущие атрибуты вывода
 extern unsigned int CX, CY; // текущие координаты
 extern int LC, TC, RC, DC; // границы текущего окна вывода
 extern int lenscr, heiscr; // длина и высота текущего окна вывода
+
+#endif

@@ -12,8 +12,6 @@
 #include <windows.h>
 #undef CY
 
-int _getch(void);
-int _kbhit(void);
 #else
 #include <sys/select.h>
 #include <termios.h>
@@ -25,6 +23,12 @@ static DWORD original_input_mode;
 static int terminal_configured = 0;
 static int terminal_raw_enabled = 0;
 static int terminal_signals_configured = 0;
+static unsigned char input_buffer[8];
+static int input_buffer_pos = 0;
+static int input_buffer_len = 0;
+
+static int map_ascii_key(int c, char *s1, char *s2);
+static int map_windows_extended_key(int c, char *s1, char *s2);
 
 static void restore_terminal(void) {
     if (terminal_raw_enabled) {
@@ -80,6 +84,7 @@ static void init_terminal(void) {
 
     raw_mode = original_input_mode;
     raw_mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT);
+    raw_mode |= ENABLE_EXTENDED_FLAGS;
 
     if (SetConsoleMode(input_handle, raw_mode)) {
         terminal_raw_enabled = 1;
@@ -87,18 +92,107 @@ static void init_terminal(void) {
     }
 }
 
-static int read_byte(int timeout_us) {
-    DWORD start_tick = GetTickCount();
-    DWORD timeout_ms = timeout_us < 0 ? INFINITE : (DWORD) ((timeout_us + 999) / 1000);
+static void push_input_byte(unsigned char c) {
+    if (input_buffer_len < (int) sizeof(input_buffer)) {
+        input_buffer[input_buffer_len] = c;
+        input_buffer_len++;
+    }
+}
 
-    while (!_kbhit()) {
-        if (timeout_ms != INFINITE && (GetTickCount() - start_tick) >= timeout_ms) {
-            return -1;
+static void push_utf8_char(WCHAR ch) {
+    if (ch < 0x80) {
+        push_input_byte((unsigned char) ch);
+    } else if (ch < 0x800) {
+        push_input_byte((unsigned char) (0xC0 | (ch >> 6)));
+        push_input_byte((unsigned char) (0x80 | (ch & 0x3F)));
+    } else {
+        push_input_byte((unsigned char) (0xE0 | (ch >> 12)));
+        push_input_byte((unsigned char) (0x80 | ((ch >> 6) & 0x3F)));
+        push_input_byte((unsigned char) (0x80 | (ch & 0x3F)));
+    }
+}
+
+static int read_windows_key(char *s1, char *s2) {
+    HANDLE input_handle;
+    int ascii_key;
+
+    if (input_buffer_pos < input_buffer_len) {
+        *s1 = (char) input_buffer[input_buffer_pos++];
+        *s2 = 0;
+        if (input_buffer_pos < input_buffer_len) {
+            *s2 = (char) input_buffer[input_buffer_pos++];
         }
-        Sleep(1);
+        if (input_buffer_pos >= input_buffer_len) {
+            input_buffer_pos = 0;
+            input_buffer_len = 0;
+        }
+        return ((unsigned char) *s1 << 8) | (unsigned char) *s2;
     }
 
-    return _getch() & 0xFF;
+    input_buffer_pos = 0;
+    input_buffer_len = 0;
+
+    input_handle = GetStdHandle(STD_INPUT_HANDLE);
+    if (input_handle == INVALID_HANDLE_VALUE) {
+        return 0;
+    }
+
+    while (1) {
+        INPUT_RECORD record;
+        DWORD events_available;
+        DWORD records_read;
+
+        if (!GetNumberOfConsoleInputEvents(input_handle, &events_available) || events_available == 0) {
+            return 0;
+        }
+
+        if (!ReadConsoleInputW(input_handle, &record, 1, &records_read) || records_read == 0) {
+            return 0;
+        }
+
+        if (record.EventType == WINDOW_BUFFER_SIZE_EVENT) {
+            return 0;
+        }
+
+        if (record.EventType != KEY_EVENT || !record.Event.KeyEvent.bKeyDown) {
+            continue;
+        }
+
+        if (record.Event.KeyEvent.uChar.UnicodeChar == 0) {
+            return map_windows_extended_key(record.Event.KeyEvent.wVirtualScanCode, s1, s2);
+        }
+
+        if (record.Event.KeyEvent.uChar.UnicodeChar < 0x80) {
+            return map_ascii_key(record.Event.KeyEvent.uChar.UnicodeChar, s1, s2);
+        }
+
+        push_utf8_char(record.Event.KeyEvent.uChar.UnicodeChar);
+        break;
+    }
+
+    *s1 = (char) input_buffer[0];
+    *s2 = input_buffer_len > 1 ? (char) input_buffer[1] : 0;
+    input_buffer_pos = input_buffer_len > 2 ? 2 : 0;
+    if (input_buffer_len <= 2) {
+        input_buffer_len = 0;
+    }
+
+    if (*s2 != 0) {
+        return ((unsigned char) *s1 << 8) | (unsigned char) *s2;
+    }
+
+    ascii_key = map_ascii_key((unsigned char) *s1, s1, s2);
+    return ascii_key;
+}
+
+static int read_byte(int timeout_us) {
+    (void) timeout_us;
+
+    if (input_buffer_pos < input_buffer_len) {
+        return input_buffer[input_buffer_pos++];
+    }
+
+    return -1;
 }
 #else
 static struct termios original_terminal;
@@ -450,6 +544,10 @@ int Getc(char *s1, char *s2) {
 
     init_terminal();
     RefreshTerminalSize();
+
+#ifdef _WIN32
+    return read_windows_key(s1, s2);
+#endif
 
     c = read_byte(0);
     if (c < 0) {

@@ -1,7 +1,239 @@
 #include "dos_compat.h"
 #include "asm.h"
+#include "keys.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/select.h>
+#include <termios.h>
+#include <unistd.h>
+
+static struct termios original_terminal;
+static int terminal_configured = 0;
+static int terminal_raw_enabled = 0;
+
+static void restore_terminal(void) {
+    if (terminal_raw_enabled) {
+        tcsetattr(STDIN_FILENO, TCSANOW, &original_terminal);
+        terminal_raw_enabled = 0;
+    }
+}
+
+static void init_terminal(void) {
+    struct termios raw;
+
+    if (terminal_configured) {
+        return;
+    }
+
+    terminal_configured = 1;
+    if (!isatty(STDIN_FILENO)) {
+        return;
+    }
+
+    if (tcgetattr(STDIN_FILENO, &original_terminal) != 0) {
+        return;
+    }
+
+    raw = original_terminal;
+    raw.c_lflag &= ~(ICANON | ECHO);
+    raw.c_iflag &= ~(IXON | ICRNL);
+    raw.c_oflag &= ~(OPOST);
+    raw.c_cc[VMIN] = 0;
+    raw.c_cc[VTIME] = 0;
+
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &raw) == 0) {
+        terminal_raw_enabled = 1;
+        atexit(restore_terminal);
+    }
+}
+
+static int read_byte(int timeout_us) {
+    unsigned char c;
+    fd_set input;
+    struct timeval timeout;
+    struct timeval *timeout_ptr = NULL;
+
+    FD_ZERO(&input);
+    FD_SET(STDIN_FILENO, &input);
+
+    if (timeout_us >= 0) {
+        timeout.tv_sec = timeout_us / 1000000;
+        timeout.tv_usec = timeout_us % 1000000;
+        timeout_ptr = &timeout;
+    }
+
+    if (select(STDIN_FILENO + 1, &input, NULL, NULL, timeout_ptr) <= 0) {
+        return -1;
+    }
+
+    if (read(STDIN_FILENO, &c, 1) != 1) {
+        return -1;
+    }
+
+    return c;
+}
+
+static int make_key(int code, char *s1, char *s2) {
+    *s1 = (char) (code & 0xFF);
+    *s2 = (char) ((code >> 8) & 0xFF);
+
+    return code;
+}
+
+static int map_ascii_key(int c, char *s1, char *s2) {
+    switch (c) {
+        case 0x08:
+        case 0x7F:
+            return make_key(_BackSpace_, s1, s2);
+        case '\t':
+            return make_key(_Tab_, s1, s2);
+        case '\r':
+        case '\n':
+            return make_key(_Enter_, s1, s2);
+        case ' ':
+            return make_key(_Space_, s1, s2);
+        case '+':
+            return make_key(_SEQUAL_, s1, s2);
+        case '-':
+            return make_key(_MINUS_, s1, s2);
+        case '*':
+            return make_key(_S8_, s1, s2);
+        case '/':
+            return make_key(_SLASH_, s1, s2);
+        case ':':
+            return make_key(_SDOTCOM_, s1, s2);
+        case ';':
+            return make_key(_DOTCOM_, s1, s2);
+        case '\\':
+            return make_key(_LINE_, s1, s2);
+        case '|':
+            return make_key(_SLINE_, s1, s2);
+        case '0':
+            return make_key(_0_, s1, s2);
+        case '1':
+            return make_key(_1_, s1, s2);
+        case '2':
+            return make_key(_2_, s1, s2);
+        case '3':
+            return make_key(_3_, s1, s2);
+        case '4':
+            return make_key(_4_, s1, s2);
+        case '5':
+            return make_key(_5_, s1, s2);
+        case '6':
+            return make_key(_6_, s1, s2);
+        case '7':
+            return make_key(_7_, s1, s2);
+        case '8':
+            return make_key(_8_, s1, s2);
+        case '9':
+            return make_key(_9_, s1, s2);
+        default:
+            *s1 = (char) c;
+            *s2 = 0;
+            return (unsigned char) *s1;
+    }
+}
+
+static int map_csi_sequence(char *s1, char *s2) {
+    int c = read_byte(10000);
+
+    switch (c) {
+        case 'A':
+            return make_key(_Up_, s1, s2);
+        case 'B':
+            return make_key(_Down_, s1, s2);
+        case 'C':
+            return make_key(_Right_, s1, s2);
+        case 'D':
+            return make_key(_Left_, s1, s2);
+        case 'F':
+            return make_key(_End_, s1, s2);
+        case 'H':
+            return make_key(_Home_, s1, s2);
+        case '1':
+            c = read_byte(10000);
+            if (c == '~') {
+                return make_key(_Home_, s1, s2);
+            }
+            if (c == '5') {
+                read_byte(10000);
+                return make_key(_F5_, s1, s2);
+            }
+            if (c == '7') {
+                read_byte(10000);
+                return make_key(_F6_, s1, s2);
+            }
+            if (c == '8') {
+                read_byte(10000);
+                return make_key(_F7_, s1, s2);
+            }
+            if (c == '9') {
+                read_byte(10000);
+                return make_key(_F8_, s1, s2);
+            }
+            break;
+        case '2':
+            c = read_byte(10000);
+            if (c == '1') {
+                read_byte(10000);
+                return make_key(_F10_, s1, s2);
+            }
+            break;
+        case '4':
+            read_byte(10000);
+            return make_key(_End_, s1, s2);
+        case '5':
+            read_byte(10000);
+            return make_key(_PageUp_, s1, s2);
+        case '6':
+            read_byte(10000);
+            return make_key(_PageDown_, s1, s2);
+        default:
+            break;
+    }
+
+    *s1 = 0;
+    *s2 = 0;
+    return 0;
+}
+
+static int map_escape_sequence(char *s1, char *s2) {
+    int c = read_byte(20000);
+
+    if (c < 0) {
+        return make_key(_Esc_, s1, s2);
+    }
+
+    if (c == '[') {
+        return map_csi_sequence(s1, s2);
+    }
+
+    if (c == 'O') {
+        c = read_byte(10000);
+        switch (c) {
+            case 'P':
+                return make_key(_F1_, s1, s2);
+            case 'Q':
+                return make_key(_F2_, s1, s2);
+            case 'R':
+                return make_key(_F3_, s1, s2);
+            case 'S':
+                return make_key(_F4_, s1, s2);
+            case 'F':
+                return make_key(_End_, s1, s2);
+            case 'H':
+                return make_key(_Home_, s1, s2);
+            default:
+                break;
+        }
+    }
+
+    *s1 = 0;
+    *s2 = 0;
+    return 0;
+}
 
 // Перевод числа из BCD-формата в десятичный формат
 //==========================================
@@ -49,26 +281,32 @@ void GetDACpalette(int sn, int nn, char *buf) {
 // Прием символа с клавиатуры
 //==========================================
 int Getc(char *s1, char *s2) {
-    int c = getchar();
+    int c;
     int c2;
 
-    if (c == EOF) {
+    init_terminal();
+
+    c = read_byte(0);
+    if (c < 0) {
         *s1 = 0;
         *s2 = 0;
         return 0;
     }
 
+    if (c == 0x1B) {
+        return map_escape_sequence(s1, s2);
+    }
+
     *s1 = (char) c;
     if ((c & 0xE0) == 0xC0) {
-        c2 = getchar();
-        if (c2 != EOF) {
+        c2 = read_byte(10000);
+        if (c2 >= 0) {
             *s2 = (char) c2;
             return ((unsigned char) *s1 << 8) | (unsigned char) *s2;
         }
     }
 
-    *s2 = 0;
-    return (unsigned char) *s1;
+    return map_ascii_key(c, s1, s2);
 }
 
 // Имитация нажатия клавиши

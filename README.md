@@ -109,3 +109,11 @@ Issues этого репозитория.
 
 Информация о содержимом файлов лежит в [FILES.md](FILES.md).
 
+## Authors
+
+* Vladimir Neumoin - original author and developer, 1997
+* Vitalii Neumoin - GitHub publication, adaptation, and repository maintenance
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

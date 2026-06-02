@@ -4,8 +4,15 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef _WIN32
+#define CY WIN32_API_CY
+#include <windows.h>
+#undef CY
+#else
 #include <sys/ioctl.h>
 #include <unistd.h>
+#endif
 
 #define LOGICAL_SCREEN_WIDTH 80
 #define LOGICAL_SCREEN_HEIGHT 25
@@ -26,6 +33,13 @@ static int terminal_screen_signals_initialized = 0;
 static volatile sig_atomic_t terminal_size_changed = 1;
 static void (*terminal_resize_handler)(void) = NULL;
 
+#ifdef _WIN32
+static DWORD original_output_mode;
+static UINT original_output_code_page;
+static UINT original_input_code_page;
+static int terminal_console_configured = 0;
+#endif
+
 static void apply_attribute(void);
 static void move_terminal_cursor(void);
 
@@ -38,28 +52,111 @@ static int terminal_cell_visible(void) {
 }
 
 static void update_terminal_size(void) {
+#ifdef _WIN32
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    HANDLE output_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    if ((output_handle != INVALID_HANDLE_VALUE) && GetConsoleScreenBufferInfo(output_handle, &info)) {
+        TerminalCols = info.srWindow.Right - info.srWindow.Left + 1;
+        TerminalRows = info.srWindow.Bottom - info.srWindow.Top + 1;
+    }
+#else
     struct winsize size;
 
     if ((ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == 0) && (size.ws_col > 0) && (size.ws_row > 0)) {
         TerminalCols = size.ws_col;
         TerminalRows = size.ws_row;
     }
+#endif
 
     ScreenOffsetX = (TerminalCols > LOGICAL_SCREEN_WIDTH) ? ((TerminalCols - LOGICAL_SCREEN_WIDTH) / 2) : 0;
     ScreenOffsetY = (TerminalRows > LOGICAL_SCREEN_HEIGHT) ? ((TerminalRows - LOGICAL_SCREEN_HEIGHT) / 2) : 0;
 }
 
+#ifdef _WIN32
+static void configure_terminal_console(void) {
+    HANDLE output_handle;
+    DWORD output_mode;
+
+    if (terminal_console_configured) {
+        return;
+    }
+
+    terminal_console_configured = 1;
+    original_output_code_page = GetConsoleOutputCP();
+    original_input_code_page = GetConsoleCP();
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
+    output_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (output_handle == INVALID_HANDLE_VALUE) {
+        return;
+    }
+
+    if (GetConsoleMode(output_handle, &output_mode)) {
+        original_output_mode = output_mode;
+        SetConsoleMode(output_handle, output_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    }
+}
+#endif
+
 void RestoreTerminalScreen(void) {
     printf("\033[0m\033[?25h\033[?1049l");
     fflush(stdout);
+#ifdef _WIN32
+    if (terminal_console_configured) {
+        HANDLE output_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+        if (output_handle != INVALID_HANDLE_VALUE) {
+            SetConsoleMode(output_handle, original_output_mode);
+        }
+        SetConsoleOutputCP(original_output_code_page);
+        SetConsoleCP(original_input_code_page);
+        terminal_console_configured = 0;
+    }
+#endif
 }
 
 void RestoreTerminalScreenFromSignal(void) {
     static const char sequence[] = "\033[0m\033[?25h\033[?1049l";
 
+#ifdef _WIN32
+    DWORD written;
+    HANDLE output_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    if (output_handle != INVALID_HANDLE_VALUE) {
+        WriteConsoleA(output_handle, sequence, (DWORD) (sizeof(sequence) - 1), &written, NULL);
+    }
+#else
     write(STDOUT_FILENO, sequence, sizeof(sequence) - 1);
+#endif
 }
 
+#ifdef _WIN32
+static BOOL WINAPI handle_terminal_screen_control(DWORD control_type) {
+    switch (control_type) {
+        case CTRL_C_EVENT:
+        case CTRL_BREAK_EVENT:
+        case CTRL_CLOSE_EVENT:
+        case CTRL_LOGOFF_EVENT:
+        case CTRL_SHUTDOWN_EVENT:
+            RestoreTerminalScreenFromSignal();
+            ExitProcess(128 + (control_type == CTRL_C_EVENT ? SIGINT : SIGTERM));
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+static void init_terminal_screen_signals(void) {
+    if (terminal_screen_signals_initialized) {
+        return;
+    }
+
+    terminal_screen_signals_initialized = 1;
+    SetConsoleCtrlHandler(handle_terminal_screen_control, TRUE);
+}
+#else
 static void handle_terminal_screen_signal(int signal_number) {
     RestoreTerminalScreenFromSignal();
     _exit(128 + signal_number);
@@ -81,6 +178,7 @@ static void init_terminal_screen_signals(void) {
     signal(SIGQUIT, handle_terminal_screen_signal);
     signal(SIGWINCH, handle_terminal_resize_signal);
 }
+#endif
 
 static void init_terminal_screen(void) {
     if (terminal_screen_initialized) {
@@ -88,6 +186,9 @@ static void init_terminal_screen(void) {
     }
 
     terminal_screen_initialized = 1;
+#ifdef _WIN32
+    configure_terminal_console();
+#endif
     init_terminal_screen_signals();
     update_terminal_size();
     terminal_size_changed = 0;
@@ -109,12 +210,25 @@ static int ansi_color(int color) {
 
 int RefreshTerminalSize(void) {
     init_terminal_screen();
+#ifdef _WIN32
+    {
+        int old_cols = TerminalCols;
+        int old_rows = TerminalRows;
+
+        update_terminal_size();
+        if ((old_cols != TerminalCols) || (old_rows != TerminalRows)) {
+            terminal_size_changed = 1;
+        }
+    }
+#endif
     if (!terminal_size_changed) {
         return 0;
     }
 
     terminal_size_changed = 0;
+#ifndef _WIN32
     update_terminal_size();
+#endif
     printf("\033[0m");
     printf("\033[2J");
     printf("\033[H");

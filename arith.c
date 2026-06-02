@@ -1225,6 +1225,22 @@ void clearbase(void) {
     }
 }
 
+int is_lower_date(const struct ftime *FTNew, const struct ftime *FT) {
+    if (FTNew->ft_year > FT->ft_year) return 0;
+    if (FTNew->ft_year < FT->ft_year) return 1;
+    if (FTNew->ft_month > FT->ft_month) return 0;
+    if (FTNew->ft_month < FT->ft_month) return 1;
+    if (FTNew->ft_day > FT->ft_day) return 0;
+    if (FTNew->ft_day < FT->ft_day) return 1;
+    if (FTNew->ft_hour > FT->ft_hour) return 0;
+    if (FTNew->ft_hour < FT->ft_hour) return 1;
+    if (FTNew->ft_min > FT->ft_min) return 0;
+    if (FTNew->ft_min < FT->ft_min) return 1;
+    if (FTNew->ft_tsec > FT->ft_tsec) return 0;
+    if (FTNew->ft_tsec < FT->ft_tsec) return 1;
+    return 0;
+}
+
 void savebase(void) {
     int i, j, k, l, m;
     FILE *FILE;
@@ -1278,39 +1294,8 @@ void savebase(void) {
     getftime(FILE, &FT);
     while (FILE != NULL) {
         getftime(FILE, &FTnew);
-        l = 0;
-        if (FTnew.ft_year < FT.ft_year)
-            l = 1;
-        else {
-            if (FTnew.ft_year == FT.ft_year) {
-                if (FTnew.ft_month < FT.ft_month)
-                    l = 1;
-                else {
-                    if (FTnew.ft_month == FT.ft_month) {
-                        if (FTnew.ft_day < FT.ft_day)
-                            l = 1;
-                        else {
-                            if (FTnew.ft_day == FT.ft_day) {
-                                if (FTnew.ft_hour < FT.ft_hour)
-                                    l = 1;
-                                else {
-                                    if (FTnew.ft_hour == FT.ft_hour) {
-                                        if (FTnew.ft_min < FT.ft_min)
-                                            l = 1;
-                                        else {
-                                            if (FTnew.ft_min == FT.ft_min) {
-                                                if (FTnew.ft_tsec < FT.ft_tsec)
-                                                    l = 1;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        l = is_lower_date(&FTnew, &FT);
+
         if (l == 1) {
             getftime(FILE, &FT);
             k = j;

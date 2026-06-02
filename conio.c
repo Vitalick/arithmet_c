@@ -201,7 +201,7 @@ void GotoXY(int x, int y) {
     flush_terminal();
 }
 
-void Cprint(char *String) {
+void Cprint(const char *String) {
     int i = 0, j = NP * 4096 + CY * 160 + CX * 2;
     int k;
     int utf8_visible = 0;
@@ -300,7 +300,7 @@ void Cprint(char *String) {
     flush_terminal();
 }
 
-void CprintXY(int x, int y, char *String) {
+void CprintXY(int x, int y, const char *String) {
     GotoXY(x, y);
     Cprint(String);
 }

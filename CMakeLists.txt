@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(ARITHMET_VERSION 1.2.4)
+set(ARITHMET_VERSION 1.3.0)
 
 if (WIN32)
     project(ARITHMET VERSION ${ARITHMET_VERSION} LANGUAGES C RC)
@@ -12,7 +12,13 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(ARITHMET_SOURCES
-        arith.c
+        main.c
+        app_state.c
+        input.c
+        protocol.c
+        screens.c
+        session.c
+        ui_helpers.c
         conio.c
         asm.c
         mouse.c

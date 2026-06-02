@@ -180,19 +180,19 @@ void run_training_session(void) {
         if (app_settings[8] > 0) {
             TextColor(YELLOW);
             switch (number) {
-                case 0:
+                case 0: // operation +
                     snprintf(tmps, sizeof(tmps), "%i - %i = %i", app_settings[8], arg1, app_settings[8] - arg1);
                     CprintXY(27, 14, tmps);
                     snprintf(tmps, sizeof(tmps), "%i - %i = %i", app_settings[8], arg2, app_settings[8] - arg2);
                     CprintXY(27, 15, tmps);
                     break;
-                case 1:
+                case 1: // operation -
                     snprintf(tmps, sizeof(tmps), "%i - %i = %i", arg1, app_settings[8], arg1 - app_settings[8]);
                     CprintXY(27, 14, tmps);
                     snprintf(tmps, sizeof(tmps), "%i + %i = %i", arg2, app_settings[8], arg2 + app_settings[8]);
                     CprintXY(27, 15, tmps);
                     break;
-                case 2:
+                case 2: // operation *
                     ll = app_settings[8] / arg1;
                     kk = ll * arg1;
                     mm = app_settings[8] - kk;
@@ -210,7 +210,7 @@ void run_training_session(void) {
                         snprintf(tmps, sizeof(tmps), "%i / %i = %i (остаток %i)", app_settings[8], arg2, ll, mm);
                     CprintXY(27, 15, tmps);
                     break;
-                case 3:
+                case 3: // operation /
                     ll = arg1 / app_settings[8];
                     kk = ll * app_settings[8];
                     mm = arg1 - kk;
@@ -222,7 +222,7 @@ void run_training_session(void) {
                     snprintf(tmps, sizeof(tmps), "%i * %i = %i", arg2, app_settings[8], arg2 * app_settings[8]);
                     CprintXY(27, 15, tmps);
                     break;
-                case 4:
+                case 4: // operation :
                     kk = arg2 * app_settings[8];
                     mm = arg1 - kk;
                     if (mm == 0)

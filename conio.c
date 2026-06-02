@@ -3,6 +3,7 @@
 #include "asm.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 static char ScreenBuffer[4096 * 8];
 char *Screen = ScreenBuffer;
@@ -13,6 +14,27 @@ int LC = 1, TC = 1, RC = 80, DC = 25;
 int lenscr = 80, heiscr = 25;
 
 static int cursor_visible = 1;
+static int terminal_screen_initialized = 0;
+
+static void restore_terminal_screen(void) {
+    printf("\033[0m");
+    printf("\033[?25h");
+    printf("\033[?1049l");
+    fflush(stdout);
+}
+
+static void init_terminal_screen(void) {
+    if (terminal_screen_initialized) {
+        return;
+    }
+
+    terminal_screen_initialized = 1;
+    printf("\033[?1049h");
+    printf("\033[2J");
+    printf("\033[H");
+    atexit(restore_terminal_screen);
+    fflush(stdout);
+}
 
 static int ansi_color(int color) {
     static const int colors[16] = {
@@ -25,12 +47,13 @@ static int ansi_color(int color) {
 
 static void apply_attribute(void) {
     int fg = ATTRIBUTE & 0x0F;
-    int bg = (ATTRIBUTE >> 4) & 0x07;
 
-    printf("\033[%d;%dm", ansi_color(fg), ansi_color(bg) + 10);
+    init_terminal_screen();
+    printf("\033[%dm", ansi_color(fg));
 }
 
 static void move_terminal_cursor(void) {
+    init_terminal_screen();
     printf("\033[%u;%uH", CY + 1, CX + 1);
 }
 
@@ -39,6 +62,7 @@ static void flush_terminal(void) {
 }
 
 void _setcursortype(int type) {
+    init_terminal_screen();
     cursor_visible = type != _NOCURSOR;
     printf(cursor_visible ? "\033[?25h" : "\033[?25l");
     flush_terminal();
@@ -82,6 +106,7 @@ void ClrScr(void) {
         }
     }
     GotoXY(1, 1);
+    printf("\033[0m");
     printf("\033[2J");
     move_terminal_cursor();
     apply_attribute();

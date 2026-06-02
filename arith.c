@@ -9,6 +9,15 @@
 #include "mouse.h"
 #include "arith.h"
 
+#define STRINGIFY_VALUE(value) #value
+#define STRINGIFY(value) STRINGIFY_VALUE(value)
+
+#if defined(ARITHMET_VERSION_MAJOR) && defined(ARITHMET_VERSION_MINOR) && defined(ARITHMET_VERSION_PATCH)
+#define ARITHMET_VERSION STRINGIFY(ARITHMET_VERSION_MAJOR) "." STRINGIFY(ARITHMET_VERSION_MINOR) "." STRINGIFY(ARITHMET_VERSION_PATCH)
+#else
+#define ARITHMET_VERSION "dev"
+#endif
+
 
 char *banner_brave[] =
 {
@@ -474,7 +483,7 @@ void createscreen(void) {
     TextColor(GREEN);
     title_x = centered_screen_x("У С Т Н Ы Й    С Ч Е Т");
     CprintXY(title_x, 1, "У С Т Н Ы Й    С Ч Е Т");
-    CprintCentered(2, "==== версия 1.2.3 ====");
+    CprintCentered(2, "==== версия " ARITHMET_VERSION " ====");
     CprintXY(title_x + 1, 3, "ВАН");
     CprintXY(title_x + 17, 3, "1999");
     TextColor(LIGHTCYAN);

@@ -20,8 +20,8 @@
 /* run_training_session сохраняет старый крупный алгоритм сеанса без дробления на новые подфункции. */
 void run_training_session(void) {
     int ii, ll, kk, mm, cc, number, OR;
-    char tmp[10];
-    char tmps[30];
+    char tmp[16];
+    char tmps[80]; // возможно при делении с остатком нужен будет больший размер массива
     int arg1, arg2, result, right, ball, n;
     double percent;
 
@@ -36,9 +36,11 @@ void run_training_session(void) {
     while (app_settings[number] == 0)
         number++;
     for (ii = 0; ii < app_settings[7]; ii++) {
-        for (ll = 0; ll < 29; ll++)
-            tmps[ll] = 0x0;
+        memset(tmps, 0, sizeof(tmps));
         clear_exercise_area();
+        TextColor(LIGHTMAGENTA);
+        snprintf(tmp, sizeof(tmp), "%-3i", right);
+        CprintXY(74, 14, tmp);
         if (n != 1) {
             number = dos_random(n);
             ll = -1;
@@ -133,7 +135,7 @@ void run_training_session(void) {
                 }
                 break;
         }
-        sprintf(tmps, "%i %c %i = ", arg1, operation_symbols[number], arg2);
+        snprintf(tmps, sizeof(tmps), "%i %c %i = ", arg1, operation_symbols[number], arg2);
         ll = strlen(tmps);
         if (number == 4)
             TextColor(WHITE);
@@ -179,15 +181,15 @@ void run_training_session(void) {
             TextColor(YELLOW);
             switch (number) {
                 case 0:
-                    sprintf(tmps, "%i - %i = %i", app_settings[8], arg1, app_settings[8] - arg1);
+                    snprintf(tmps, sizeof(tmps), "%i - %i = %i", app_settings[8], arg1, app_settings[8] - arg1);
                     CprintXY(27, 14, tmps);
-                    sprintf(tmps, "%i - %i = %i", app_settings[8], arg2, app_settings[8] - arg2);
+                    snprintf(tmps, sizeof(tmps), "%i - %i = %i", app_settings[8], arg2, app_settings[8] - arg2);
                     CprintXY(27, 15, tmps);
                     break;
                 case 1:
-                    sprintf(tmps, "%i - %i = %i", arg1, app_settings[8], arg1 - app_settings[8]);
+                    snprintf(tmps, sizeof(tmps), "%i - %i = %i", arg1, app_settings[8], arg1 - app_settings[8]);
                     CprintXY(27, 14, tmps);
-                    sprintf(tmps, "%i + %i = %i", arg2, app_settings[8], arg2 + app_settings[8]);
+                    snprintf(tmps, sizeof(tmps), "%i + %i = %i", arg2, app_settings[8], arg2 + app_settings[8]);
                     CprintXY(27, 15, tmps);
                     break;
                 case 2:
@@ -195,17 +197,17 @@ void run_training_session(void) {
                     kk = ll * arg1;
                     mm = app_settings[8] - kk;
                     if (mm == 0)
-                        sprintf(tmps, "%i / %i = %i", app_settings[8], arg1, ll);
+                        snprintf(tmps, sizeof(tmps), "%i / %i = %i", app_settings[8], arg1, ll);
                     else
-                        sprintf(tmps, "%i / %i = %i (остаток %i)", app_settings[8], arg1, ll, mm);
+                        snprintf(tmps, sizeof(tmps), "%i / %i = %i (остаток %i)", app_settings[8], arg1, ll, mm);
                     CprintXY(27, 14, tmps);
                     ll = app_settings[8] / arg2;
                     kk = ll * arg2;
                     mm = app_settings[8] - kk;
                     if (mm == 0)
-                        sprintf(tmps, "%i / %i = %i", app_settings[8], arg2, ll);
+                        snprintf(tmps, sizeof(tmps), "%i / %i = %i", app_settings[8], arg2, ll);
                     else
-                        sprintf(tmps, "%i / %i = %i (остаток %i)", app_settings[8], arg2, ll, mm);
+                        snprintf(tmps, sizeof(tmps), "%i / %i = %i (остаток %i)", app_settings[8], arg2, ll, mm);
                     CprintXY(27, 15, tmps);
                     break;
                 case 3:
@@ -213,25 +215,25 @@ void run_training_session(void) {
                     kk = ll * app_settings[8];
                     mm = arg1 - kk;
                     if (mm == 0)
-                        sprintf(tmps, "%i / %i = %i", arg1, app_settings[8], ll);
+                        snprintf(tmps, sizeof(tmps), "%i / %i = %i", arg1, app_settings[8], ll);
                     else
-                        sprintf(tmps, "%i / %i = %i (остаток %i)", arg1, app_settings[8], ll, mm);
+                        snprintf(tmps, sizeof(tmps), "%i / %i = %i (остаток %i)", arg1, app_settings[8], ll, mm);
                     CprintXY(27, 14, tmps);
-                    sprintf(tmps, "%i * %i = %i", arg2, app_settings[8], arg2 * app_settings[8]);
+                    snprintf(tmps, sizeof(tmps), "%i * %i = %i", arg2, app_settings[8], arg2 * app_settings[8]);
                     CprintXY(27, 15, tmps);
                     break;
                 case 4:
                     kk = arg2 * app_settings[8];
                     mm = arg1 - kk;
                     if (mm == 0)
-                        sprintf(tmps, "%i / %i = %i", arg1, arg2, app_settings[8]);
+                        snprintf(tmps, sizeof(tmps), "%i / %i = %i", arg1, arg2, app_settings[8]);
                     else
-                        sprintf(tmps, "%i / %i = %i (остаток %i)", arg1, arg2, app_settings[8], mm);
+                        snprintf(tmps, sizeof(tmps), "%i / %i = %i (остаток %i)", arg1, arg2, app_settings[8], mm);
                     CprintXY(27, 14, tmps);
                     if (mm > arg2)
-                        sprintf(tmps, "%i > %i", mm, arg2);
+                        snprintf(tmps, sizeof(tmps), "%i > %i", mm, arg2);
                     else
-                        sprintf(tmps, "%i < %i", mm, arg2);
+                        snprintf(tmps, sizeof(tmps), "%i < %i", mm, arg2);
                     CprintXY(27, 15, tmps);
                     break;
             }

@@ -15,6 +15,28 @@
 #include "screens.h"
 #include "ui_helpers.h"
 
+static void draw_exercise_labels(void) {
+    TextColor(LIGHTCYAN);
+    CprintXY(10, 12, "Пример:");
+    CprintXY(10, 13, "~~~~~~~");
+    CprintXY(58, 12, "Верный ответ:");
+    CprintXY(58, 13, "~~~~~~~~~~~~~");
+    CprintXY(10, 14, "Проверка:   а)");
+    CprintXY(10, 15, "~~~~~~~~~   б)");
+    CprintXY(58, 14, "Верных ответов:");
+    CprintXY(58, 15, "~~~~~~~~~~~~~~~");
+}
+
+static void clear_screen_line(int y) {
+    int i;
+    char tmp[80];
+
+    for (i = 0; i < 79; i++)
+        tmp[i] = ' ';
+    tmp[79] = 0x0;
+    CprintXY(1, y, tmp);
+}
+
 /* create_main_screen рисует статичную разметку стартового экрана и текущие настройки. */
 void create_main_screen(void) {
     int ii;
@@ -48,14 +70,7 @@ void create_main_screen(void) {
     CprintXY(60, 8, "Сложность:");
     CprintXY(36, 10, "Оценка:");
     CprintXY(36, 11, "~~~~~~~");
-    CprintXY(10, 12, "Пример:");
-    CprintXY(10, 13, "~~~~~~~");
-    CprintXY(58, 12, "Верный ответ:");
-    CprintXY(58, 13, "~~~~~~~~~~~~~");
-    CprintXY(10, 14, "Проверка:   а)");
-    CprintXY(10, 15, "~~~~~~~~~   б)");
-    CprintXY(58, 14, "Верных ответов:");
-    CprintXY(58, 15, "~~~~~~~~~~~~~~~");
+    draw_exercise_labels();
     TextColor(YELLOW);
     CprintXY(29, 6, "И");
     CprintXY(51, 7, "о");
@@ -89,21 +104,20 @@ void refresh_operation_status(void) {
 /* clear_exercise_area очищает зоны примера, проверки и баннеров между заданиями. */
 void clear_exercise_area(void) {
     int ll;
-    char tmps[30];
+    char tmps[80];
 
-    for (ll = 0; ll < 29; ll++)
+    for (ll = 0; ll < 79; ll++)
         tmps[ll] = ' ';
-    tmps[29] = 0x0;
+    tmps[79] = 0x0;
     TextColor(LIGHTCYAN);
     TextBackGround(BLUE);
-    CprintXY(27, 12, tmps);
-    CprintXY(27, 14, tmps);
-    CprintXY(27, 15, tmps);
+    CprintXY(1, 12, tmps);
+    CprintXY(1, 13, tmps);
+    CprintXY(1, 14, tmps);
+    CprintXY(1, 15, tmps);
+    draw_exercise_labels();
     for (ll = 0; ll < 8; ll++) {
         CprintXY(1, 17 + ll, tmps);
-        CprintXY(21, 17 + ll, tmps);
-        CprintXY(41, 17 + ll, tmps);
-        CprintXY(52, 17 + ll, tmps);
     }
 }
 
@@ -238,7 +252,9 @@ void create_results_screen(void) {
     CprintXY(1, 6, "Верных ответов:");
     CprintXY(22, 6, "оценка:");
     CprintXY(1, 7, "Количество действий:");
-    CprintXY(1, 12, "Предложенные действия:");
+    CprintXY(1, 11, "Предложенные действия:");
+    TextColor(RED);
+    CprintXY(3, 25, "<Up><Down><PageUp><PageDown><Home><End> - прокрутка, <Esc> - главное меню");
     TextColor(LIGHTMAGENTA);
     CprintXY(6, 3, session_result.name);
     l = 11;
@@ -301,7 +317,7 @@ void create_results_screen(void) {
         k /= m;
         snprintf(tmp, sizeof(tmp), "Время:  лучшее - %i, худшее - %i, среднее - %i", i, j, k);
         m = 80 - strlen(tmp) - 5;
-        CprintXY(m, 25, tmp);
+        CprintXY(m, 24, tmp);
     }
 }
 
@@ -312,23 +328,20 @@ void refresh_results_screen(void) {
 
     TextBackGround(BLUE);
     for (l = 0; l < 11; l++) {
-        for (i = 0; i < 79; i++)
-            tmp[i] = ' ';
-        tmp[79] = 0x0;
-        CprintXY(1, l + 13, tmp);
+        clear_screen_line(l + 12);
         if ((session_result.answers[l + results_scroll_offset].operation_index == -10) || (session_result.answers[l + results_scroll_offset].is_correct == -10))
             break;
         TextColor(LIGHTMAGENTA);
         sprintf(tmp, "%3i.", l + results_scroll_offset + 1);
-        CprintXY(1, l + 13, tmp);
+        CprintXY(1, l + 12, tmp);
         if (session_result.answers[l + results_scroll_offset].is_correct == 0)
-            CprintXY(7, l + 13, "не");
-        CprintXY(10, l + 13, "верно:");
+            CprintXY(7, l + 12, "не");
+        CprintXY(10, l + 12, "верно:");
         TextColor(LIGHTCYAN);
         sprintf(tmp, "%i%c%i=%i", session_result.answers[l + results_scroll_offset].values[0],
                 operation_symbols[session_result.answers[l + results_scroll_offset].operation_index], session_result.answers[l + results_scroll_offset].values[1],
                 session_result.answers[l + results_scroll_offset].values[2]);
-        CprintXY(17, l + 13, tmp);
+        CprintXY(17, l + 12, tmp);
         switch (session_result.answers[l + results_scroll_offset].values[3]) {
             case -7:
                 sprintf(tmp, "нажата клавиша <Esc>");
@@ -344,7 +357,7 @@ void refresh_results_screen(void) {
                 break;
         }
         TextColor(LIGHTMAGENTA);
-        CprintXY(30, l + 13, tmp);
+        CprintXY(30, l + 12, tmp);
         m = session_result.answers[l + results_scroll_offset].elapsed_seconds - (session_result.answers[l + results_scroll_offset].elapsed_seconds / 10) * 10;
         if ((session_result.answers[l + results_scroll_offset].elapsed_seconds > 10) && (session_result.answers[l + results_scroll_offset].elapsed_seconds < 20))
             m = 0;
@@ -366,15 +379,15 @@ void refresh_results_screen(void) {
                 sprintf(tmp, "  прошло %3i секунды\r\n", session_result.answers[l + results_scroll_offset].elapsed_seconds);
                 break;
         }
-        CprintXY(52, l + 13, tmp);
+        CprintXY(52, l + 12, tmp);
     }
     TextColor(YELLOW);
     if (results_scroll_offset > 0)
-        CprintXY(50, 12, "еще");
+        CprintXY(50, 11, "еще");
     else
-        CprintXY(50, 12, "   ");
+        CprintXY(50, 11, "   ");
     if ((results_scroll_offset + 11) < session_result.answered_count)
-        CprintXY(50, 24, "еще");
+        CprintXY(50, 23, "еще");
     else
-        CprintXY(50, 24, "   ");
+        CprintXY(50, 23, "   ");
 }

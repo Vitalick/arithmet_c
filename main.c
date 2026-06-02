@@ -32,8 +32,10 @@ int main(void) {
     randomize();
     settings_file = fopen("a.dat", "rb");
     if (settings_file != NULL) {
-        fread(app_settings, sizeof(int), 10, settings_file);
-        fread(player_name, 46, 1, settings_file);
+        if (fread(app_settings, sizeof(int), 10, settings_file) != 10)
+            app_settings[7] = 0;
+        if (fread(player_name, 46, 1, settings_file) != 1)
+            player_name[0] = 0x0;
         fclose(settings_file);
     }
     if (player_name[0] == 0x0) {
@@ -192,8 +194,11 @@ int main(void) {
                     flag = 1;
                     break;
                 case _F1_:
-                    if (flag == 1)
+                    if (flag == 1) {
                         show_session_results();
+                        active_screen = 1;
+                        create_main_screen();
+                    }
                     break;
                 default:
                     if (key_matches_utf8_or_latin(pressed_key_bytes, "и", "И", 'b', 'B')) {

@@ -17,6 +17,10 @@
   `terminal_screen_unix.c`.
 - Добавлен общий интерфейс `terminal_platform.h`, а `CMakeLists.txt` теперь
   подключает Windows- или Unix-реализации в зависимости от платформы.
+- Номер версии вынесен в `CMakeLists.txt` через `project(... VERSION ...)` и
+  передается в интерфейс программы через compile definitions.
+- Для Windows-сборки добавлен ресурс `arith.rc`, который вшивает существующую
+  иконку `arith.ico` в `arithmet.exe`.
 
 ## Версия 1.2.3, 2 июня 2026 г.
 

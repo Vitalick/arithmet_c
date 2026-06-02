@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(ARITHMET_VERSION 1.3.0)
+set(ARITHMET_VERSION 1.3.1)
 
 if (WIN32)
     project(ARITHMET VERSION ${ARITHMET_VERSION} LANGUAGES C RC)

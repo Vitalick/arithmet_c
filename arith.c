@@ -181,6 +181,57 @@ static const char *translit_utf8_letter(const char *text, int *bytes) {
     return NULL;
 }
 
+static int utf8_is_continuation(char c) {
+    return (((unsigned char) c & 0xC0) == 0x80);
+}
+
+static int utf8_display_len(const char *text, int bytes) {
+    int i;
+    int len = 0;
+
+    for (i = 0; (i < bytes) && (text[i] != 0x0); i++) {
+        if (!utf8_is_continuation(text[i])) {
+            len++;
+        }
+    }
+
+    return len;
+}
+
+static int utf8_prev_pos(const char *text, int pos) {
+    if (pos <= 0) {
+        return 0;
+    }
+
+    pos--;
+    while ((pos > 0) && utf8_is_continuation(text[pos])) {
+        pos--;
+    }
+
+    return pos;
+}
+
+static int utf8_next_pos(const char *text, int pos, int limit) {
+    if ((pos >= limit) || (text[pos] == 0x0)) {
+        return pos;
+    }
+
+    pos++;
+    while ((pos < limit) && utf8_is_continuation(text[pos])) {
+        pos++;
+    }
+
+    return pos;
+}
+
+static int input_screen_x(int sx, const char *text, int pos, int is_utf8) {
+    if (is_utf8) {
+        return sx + utf8_display_len(text, pos);
+    }
+
+    return sx + pos;
+}
+
 int main(void) {
     int i, flag;
 
@@ -461,6 +512,7 @@ void input(int sx, int sy, int n, int nn) {
     char tmp[56], ks[2];
     char cursor[4] = "-\\|/";
     double clck, clck_;
+    int is_utf8_input = n == -1;
 
     flag = 0;
     lscr = (clock_t) (operation[9] + 5) * CLK_TCK;
@@ -502,7 +554,7 @@ void input(int sx, int sy, int n, int nn) {
     }
     TextColor(LIGHTMAGENTA);
     ee = ll;
-    GotoXY(sx + ll, sy);
+    GotoXY(input_screen_x(sx, tmp, ll, is_utf8_input), sy);
     kk = 0;
     curT = oldT = newT = clock();
     while (kk != _Esc_) {
@@ -518,7 +570,7 @@ void input(int sx, int sy, int n, int nn) {
         }
         if ((newT - curT) > curI) {
             curT = newT;
-            GetCharXY(sx + ll, sy, cursor[cc]);
+            GetCharXY(input_screen_x(sx, tmp, ll, is_utf8_input), sy, cursor[cc]);
             cc++;
             if (cc > 3)
                 cc = 0;
@@ -593,10 +645,16 @@ void input(int sx, int sy, int n, int nn) {
                     break;
                 case _BackSpace_:
                     if (ll > 0) {
+                        int prev = is_utf8_input ? utf8_prev_pos(tmp, ll) : ll - 1;
+                        int old_ll = ll;
+                        int erase;
+
                         if (ll == ee)
-                            ee--;
-                        ll--;
-                        tmp[ll] = ' ';
+                            ee = prev;
+                        ll = prev;
+                        for (erase = prev; erase < old_ll; erase++) {
+                            tmp[erase] = ' ';
+                        }
                         CprintXY(sx, sy, tmp);
                         while ((ee > 0) && (tmp[ee - 1] == ' '))
                             ee--;
@@ -638,14 +696,14 @@ void input(int sx, int sy, int n, int nn) {
                     break;
                 case _Left_:
                     if (ll > 0) {
-                        ll--;
+                        ll = is_utf8_input ? utf8_prev_pos(tmp, ll) : ll - 1;
                         CprintXY(sx, sy, tmp);
                     }
                     flag = 1;
                     break;
                 case _Right_:
                     if (ll < nn) {
-                        ll++;
+                        ll = is_utf8_input ? utf8_next_pos(tmp, ll, nn) : ll + 1;
                         CprintXY(sx, sy, tmp);
                     }
                     flag = 1;
@@ -686,6 +744,13 @@ void input(int sx, int sy, int n, int nn) {
                             CprintXY(sx, sy, tmp);
                         }
                         if (ll < nn) {
+                            int bytes = ks[1] != 0 ? 2 : 1;
+
+                            if ((ll + bytes) > nn) {
+                                errorsound();
+                                flag = 1;
+                                break;
+                            }
                             tmp[ll] = ks[0];
                             ll++;
                             if ((ks[1] != 0) && (ll < nn)) {

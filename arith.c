@@ -134,6 +134,16 @@ int mmm = 10;
 int Mx, My, Mm, Mdx, Mdy, MOUSE, KEYMOUSE;
 int n1, n2, b1, b2, KLMN;
 char *nn1, *nn2;
+int active_screen = 1;
+
+static void redraw_active_screen(void) {
+    if (active_screen == 2) {
+        createvisio();
+        refreshvisio();
+    } else {
+        createscreen();
+    }
+}
 
 static int utf8_key_is(const char key[2], const char *lower, const char *upper,
                        char latin_lower, char latin_upper) {
@@ -284,7 +294,9 @@ int main(void) {
     if ((operation[9] < 0) || (operation[9] > 99))
         operation[9] = 30;
     _setcursortype(_NOCURSOR);
+    SetTerminalResizeHandler(redraw_active_screen);
     Npage(1, 1);
+    active_screen = 1;
     createscreen();
     key = 0;
     flag = 0;
@@ -412,6 +424,7 @@ int main(void) {
                 case _Enter_:
                     clearbase();
                     control();
+                    active_screen = 1;
                     createscreen();
                     flag = 1;
                     break;
@@ -1421,6 +1434,7 @@ void visio(void) {
     char ks[2];
 
     Npage(2, 1);
+    active_screen = 2;
     Nvisio = 0;
     createvisio();
     refreshvisio();
@@ -1488,6 +1502,7 @@ void visio(void) {
         }
     }
     Npage(1, 1);
+    active_screen = 1;
 }
 
 void createvisio(void) {

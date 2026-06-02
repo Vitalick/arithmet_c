@@ -25,6 +25,7 @@ static int cursor_visible = 1;
 static int terminal_screen_initialized = 0;
 static int terminal_screen_signals_initialized = 0;
 static volatile sig_atomic_t terminal_size_changed = 1;
+static void (*terminal_resize_handler)(void) = NULL;
 
 static void apply_attribute(void);
 static void move_terminal_cursor(void);
@@ -107,48 +108,6 @@ static int ansi_color(int color) {
     return colors[color & 0x0F];
 }
 
-static void render_visible_screen(void) {
-    unsigned int page = NPV * 4096;
-    unsigned int row;
-    unsigned int col;
-    int current_attribute = -1;
-    int utf8_visible = 0;
-
-    printf("\033[0m");
-    printf("\033[2J");
-    for (row = 0; row < LOGICAL_SCREEN_HEIGHT; row++) {
-        if ((ScreenOffsetY + row + 1) > (unsigned int) TerminalRows) {
-            break;
-        }
-
-        printf("\033[%u;%uH", ScreenOffsetY + row + 1, ScreenOffsetX + 1);
-        utf8_visible = 0;
-        for (col = 0; col < LOGICAL_SCREEN_WIDTH; col++) {
-            unsigned int index = page + (row * LOGICAL_SCREEN_WIDTH + col) * 2;
-            unsigned char character = (unsigned char) Screen[index];
-            unsigned char attribute = (unsigned char) Screen[index + 1];
-            int is_continuation = (character & 0xC0) == 0x80;
-            int is_visible = ((ScreenOffsetX + col + 1) <= (unsigned int) TerminalCols);
-
-            if (attribute != current_attribute) {
-                current_attribute = attribute;
-                printf("\033[%dm", ansi_color(attribute & 0x0F));
-            }
-
-            if (is_visible || (is_continuation && utf8_visible)) {
-                fputc(character == 0x0 ? ' ' : character, stdout);
-            }
-
-            if (!is_continuation) {
-                utf8_visible = is_visible;
-            }
-        }
-    }
-    printf("\033[0m");
-    apply_attribute();
-    move_terminal_cursor();
-}
-
 int RefreshTerminalSize(void) {
     init_terminal_screen();
     if (!terminal_size_changed) {
@@ -157,9 +116,21 @@ int RefreshTerminalSize(void) {
 
     terminal_size_changed = 0;
     update_terminal_size();
-    render_visible_screen();
+    printf("\033[0m");
+    printf("\033[2J");
+    printf("\033[H");
+    if (terminal_resize_handler != NULL) {
+        terminal_resize_handler();
+    } else {
+        apply_attribute();
+        move_terminal_cursor();
+    }
     fflush(stdout);
     return 1;
+}
+
+void SetTerminalResizeHandler(void (*handler)(void)) {
+    terminal_resize_handler = handler;
 }
 
 static void apply_attribute(void) {

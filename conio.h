@@ -27,6 +27,7 @@ void _setcursortype(int);
 void RestoreTerminalScreen(void);
 void RestoreTerminalScreenFromSignal(void);
 int RefreshTerminalSize(void);
+void SetTerminalResizeHandler(void (*handler)(void));
 void Npage(int, int); // Установка активной видеостраницы
 //          A   B
 // A:  номер видеостраницы

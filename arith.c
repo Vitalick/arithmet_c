@@ -9,10 +9,6 @@
 #include "mouse.h"
 #include "arith.h"
 
-// mb replaces
-// #include <unistd.h> // instead io.h
-// #include <fcntl.h> // instead io.h
-
 
 char *banner_brave[] =
 {

@@ -1,5 +1,4 @@
 #include "conio.h"
-#include "dos_compat.h"
 #include "asm.h"
 
 #include <signal.h>

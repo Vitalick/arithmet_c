@@ -2,8 +2,10 @@
 #include "dos_compat.h"
 #include "asm.h"
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static char ScreenBuffer[4096 * 8];
 char *Screen = ScreenBuffer;
@@ -15,12 +17,33 @@ int lenscr = 80, heiscr = 25;
 
 static int cursor_visible = 1;
 static int terminal_screen_initialized = 0;
+static int terminal_screen_signals_initialized = 0;
 
-static void restore_terminal_screen(void) {
-    printf("\033[0m");
-    printf("\033[?25h");
-    printf("\033[?1049l");
+void RestoreTerminalScreen(void) {
+    printf("\033[0m\033[?25h\033[?1049l");
     fflush(stdout);
+}
+
+void RestoreTerminalScreenFromSignal(void) {
+    static const char sequence[] = "\033[0m\033[?25h\033[?1049l";
+
+    write(STDOUT_FILENO, sequence, sizeof(sequence) - 1);
+}
+
+static void handle_terminal_screen_signal(int signal_number) {
+    RestoreTerminalScreenFromSignal();
+    _exit(128 + signal_number);
+}
+
+static void init_terminal_screen_signals(void) {
+    if (terminal_screen_signals_initialized) {
+        return;
+    }
+
+    terminal_screen_signals_initialized = 1;
+    signal(SIGINT, handle_terminal_screen_signal);
+    signal(SIGTERM, handle_terminal_screen_signal);
+    signal(SIGQUIT, handle_terminal_screen_signal);
 }
 
 static void init_terminal_screen(void) {
@@ -29,10 +52,11 @@ static void init_terminal_screen(void) {
     }
 
     terminal_screen_initialized = 1;
+    init_terminal_screen_signals();
     printf("\033[?1049h");
     printf("\033[2J");
     printf("\033[H");
-    atexit(restore_terminal_screen);
+    atexit(RestoreTerminalScreen);
     fflush(stdout);
 }
 

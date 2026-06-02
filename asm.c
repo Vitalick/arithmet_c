@@ -1,7 +1,9 @@
 #include "dos_compat.h"
 #include "asm.h"
+#include "conio.h"
 #include "keys.h"
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/select.h>
@@ -11,12 +13,30 @@
 static struct termios original_terminal;
 static int terminal_configured = 0;
 static int terminal_raw_enabled = 0;
+static int terminal_signals_configured = 0;
 
 static void restore_terminal(void) {
     if (terminal_raw_enabled) {
         tcsetattr(STDIN_FILENO, TCSANOW, &original_terminal);
         terminal_raw_enabled = 0;
     }
+}
+
+static void handle_terminal_signal(int signal_number) {
+    restore_terminal();
+    RestoreTerminalScreenFromSignal();
+    _exit(128 + signal_number);
+}
+
+static void init_terminal_signals(void) {
+    if (terminal_signals_configured) {
+        return;
+    }
+
+    terminal_signals_configured = 1;
+    signal(SIGINT, handle_terminal_signal);
+    signal(SIGTERM, handle_terminal_signal);
+    signal(SIGQUIT, handle_terminal_signal);
 }
 
 static void init_terminal(void) {
@@ -27,6 +47,7 @@ static void init_terminal(void) {
     }
 
     terminal_configured = 1;
+    init_terminal_signals();
     if (!isatty(STDIN_FILENO)) {
         return;
     }

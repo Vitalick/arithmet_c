@@ -24,6 +24,8 @@
 #define _NORMALCURSOR 1
 
 void _setcursortype(int);
+void RestoreTerminalScreen(void);
+void RestoreTerminalScreenFromSignal(void);
 void Npage(int, int); // Установка активной видеостраницы
 //          A   B
 // A:  номер видеостраницы

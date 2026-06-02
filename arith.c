@@ -449,7 +449,7 @@ void createscreen(void) {
     ClrScr();
     TextColor(GREEN);
     CprintXY(30, 1, "У С Т Н Ы Й    С Ч Е Т");
-    CprintXY(30, 2, "==== версия 1.2.1 ====");
+    CprintXY(30, 2, "==== версия 1.2.2 ====");
     CprintXY(31, 3, "ВАН");
     CprintXY(47, 3, "1999");
     TextColor(LIGHTCYAN);

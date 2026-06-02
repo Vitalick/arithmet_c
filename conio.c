@@ -59,8 +59,10 @@ void Cprint(char *String) {
     int i = 0, j = NP * 4096 + CY * 160 + CX * 2;
     int k;
     while (String[i] != 0x0) {
+        unsigned char ch = (unsigned char) String[i];
+
         if (((CX + 1) >= LC) && ((CX + 1) <= RC) && ((CY + 1) >= TC) && ((CY + 1) <= DC)) {
-            if (String[i] >= 0x20) {
+            if (ch >= 0x20) {
                 Screen[j + 1] = ATTRIBUTE;
                 Screen[j] = String[i];
                 if (CX < 80)

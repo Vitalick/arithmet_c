@@ -50,6 +50,7 @@ void GetDACpalette(int sn, int nn, char *buf) {
 //==========================================
 int Getc(char *s1, char *s2) {
     int c = getchar();
+    int c2;
 
     if (c == EOF) {
         *s1 = 0;
@@ -58,8 +59,16 @@ int Getc(char *s1, char *s2) {
     }
 
     *s1 = (char) c;
+    if ((c & 0xE0) == 0xC0) {
+        c2 = getchar();
+        if (c2 != EOF) {
+            *s2 = (char) c2;
+            return ((unsigned char) *s1 << 8) | (unsigned char) *s2;
+        }
+    }
+
     *s2 = 0;
-    return c;
+    return (unsigned char) *s1;
 }
 
 // Имитация нажатия клавиши

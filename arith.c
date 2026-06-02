@@ -92,7 +92,7 @@ int operation[10] = {1, 0, 0, 0, 1, 100, 10, 0};
 char NAME[46];
 char *noname = "неизвестно";
 char *yesno[2] = {"НЕТ", "ДА "};
-char symboloperation[5] = {"+-*/:"};
+char symboloperation[] = "+-*/:";
 char *stringoperation[5] = {"сложение", "вычитание", "умножение", "деление", "деление с остатком"};
 FILE *F;
 char keys[2];
@@ -127,11 +127,6 @@ struct ITOG {
     struct statement S[200];
 } itog;
 
-char symbols[3][32] = {
-    "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
-    "абвгдежзийклмнопрстуфхцчшщъыьэюя",
-    "ABWGDEGZIJKLMNOPRSTUFHCCHH'YJEUA"
-};
 int Nvisio;
 int scroll;
 clock_t oldT, newT, lscr, curT, curI;
@@ -140,7 +135,53 @@ int Mx, My, Mm, Mdx, Mdy, MOUSE, KEYMOUSE;
 int n1, n2, b1, b2, KLMN;
 char *nn1, *nn2;
 
-void main(void) {
+static int utf8_key_is(const char key[2], const char *lower, const char *upper,
+                       char latin_lower, char latin_upper) {
+    if ((key[1] == 0) && ((key[0] == latin_lower) || (key[0] == latin_upper))) {
+        return 1;
+    }
+
+    return ((key[0] == lower[0]) && (key[1] == lower[1])) ||
+           ((key[0] == upper[0]) && (key[1] == upper[1]));
+}
+
+static const char *translit_utf8_letter(const char *text, int *bytes) {
+    int i;
+    static const char *upper[] = {
+        "А", "Б", "В", "Г", "Д", "Е", "Ж", "З",
+        "И", "Й", "К", "Л", "М", "Н", "О", "П",
+        "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч",
+        "Ш", "Щ", "Ъ", "Ы", "Ь", "Э", "Ю", "Я"
+    };
+    static const char *lower[] = {
+        "а", "б", "в", "г", "д", "е", "ж", "з",
+        "и", "й", "к", "л", "м", "н", "о", "п",
+        "р", "с", "т", "у", "ф", "х", "ц", "ч",
+        "ш", "щ", "ъ", "ы", "ь", "э", "ю", "я"
+    };
+    static const char *latin[] = {
+        "A", "B", "W", "G", "D", "E", "G", "Z",
+        "I", "J", "K", "L", "M", "N", "O", "P",
+        "R", "S", "T", "U", "F", "H", "C", "CH",
+        "SH", "SH", "'", "Y", "J", "E", "U", "A"
+    };
+
+    for (i = 0; i < 32; i++) {
+        if ((text[0] == upper[i][0]) && (text[1] == upper[i][1])) {
+            *bytes = 2;
+            return latin[i];
+        }
+        if ((text[0] == lower[i][0]) && (text[1] == lower[i][1])) {
+            *bytes = 2;
+            return latin[i];
+        }
+    }
+
+    *bytes = 1;
+    return NULL;
+}
+
+int main(void) {
     int i, flag;
 
     b1 = 80 * 8 - 1;
@@ -314,46 +355,25 @@ void main(void) {
                         visio();
                     break;
                 default:
-                    switch (keys[0]) {
-                        case 'и':
-                        case 'И':
-                        case 'b':
-                        case 'B':
-                            input(34, 6, -1, 46);
-                            if (NAME[0] == 0x0) {
-                                for (i = 0; i < 46; i++)
-                                    NAME[i] = 0x0;
-                                i = 0;
-                                while (noname[i] != 0x0) {
-                                    NAME[i] = noname[i];
-                                    i++;
-                                }
+                    if (utf8_key_is(keys, "и", "И", 'b', 'B')) {
+                        input(34, 6, -1, 46);
+                        if (NAME[0] == 0x0) {
+                            for (i = 0; i < 46; i++)
+                                NAME[i] = 0x0;
+                            i = 0;
+                            while (noname[i] != 0x0) {
+                                NAME[i] = noname[i];
+                                i++;
                             }
-                            break;
-                        case 'о':
-                        case 'О':
-                        case 'j':
-                        case 'J':
-                            input(54, 7, 5, 5);
-                            break;
-                        case 'д':
-                        case 'Д':
-                        case 'l':
-                        case 'L':
-                            input(64, 7, 6, 5);
-                            break;
-                        case 'к':
-                        case 'К':
-                        case 'r':
-                        case 'R':
-                            input(51, 8, 7, 4);
-                            break;
-                        case 'с':
-                        case 'С':
-                        case 'c':
-                        case 'C':
-                            input(72, 8, 9, 2);
-                            break;
+                        }
+                    } else if (utf8_key_is(keys, "о", "О", 'j', 'J')) {
+                        input(54, 7, 5, 5);
+                    } else if (utf8_key_is(keys, "д", "Д", 'l', 'L')) {
+                        input(64, 7, 6, 5);
+                    } else if (utf8_key_is(keys, "к", "К", 'r', 'R')) {
+                        input(51, 8, 7, 4);
+                    } else if (utf8_key_is(keys, "с", "С", 'c', 'C')) {
+                        input(72, 8, 9, 2);
                     }
                     break;
             }
@@ -365,6 +385,8 @@ void main(void) {
     fwrite(operation, sizeof(int), 10, F);
     fwrite(NAME, 46, 1, F);
     fclose(F);
+
+    return 0;
 }
 
 void createscreen(void) {
@@ -437,7 +459,7 @@ void refreshoperation(void) {
 void input(int sx, int sy, int n, int nn) {
     int ll, kk, cc, ee, flag;
     char tmp[56], ks[2];
-    char cursor[4] = "─\\│/";
+    char cursor[4] = "-\\|/";
     double clck, clck_;
 
     flag = 0;
@@ -487,7 +509,7 @@ void input(int sx, int sy, int n, int nn) {
         newT = clock();
         if ((n == 8) && ((newT - oldT) > (clock_t) clck)) {
             scroll++;
-            GetCharXY(scroll, 24, '█');
+            CprintXY(scroll, 24, "█");
             if (scroll >= 80) {
                 operation[8] = -5;
                 return;
@@ -665,8 +687,12 @@ void input(int sx, int sy, int n, int nn) {
                         }
                         if (ll < nn) {
                             tmp[ll] = ks[0];
-                            CprintXY(sx, sy, tmp);
                             ll++;
+                            if ((ks[1] != 0) && (ll < nn)) {
+                                tmp[ll] = ks[1];
+                                ll++;
+                            }
+                            CprintXY(sx, sy, tmp);
                             if (ll > ee)
                                 ee = ll;
                         }
@@ -1111,7 +1137,7 @@ void savebase(void) {
     struct ftime FT, FTnew;
     struct date D;
     struct time T;
-    char tmp[20];
+    char tmp[80];
 
     for (i = 0; i < 8; i++)
         filename[i] = '_';
@@ -1120,40 +1146,33 @@ void savebase(void) {
         filename[i] = '0';
     filename[12] = 0x0;
     i = 0;
-    for (k = 0; k < 7; k++) {
+    for (k = 0; (NAME[k] != 0x0) && (i <= 6);) {
+        const char *latin;
+        int bytes;
+
         if (NAME[k] == 0x0)
             break;
-        m = 0;
-        for (j = 0; j < 32; j++)
-            if ((NAME[k] == symbols[0][j]) || (NAME[k] == symbols[1][j])) {
-                m = 1;
-                if ((NAME[k] == 'ш') || (NAME[k] == 'Ш') || (NAME[k] == 'щ') || (NAME[k] == 'щ')) {
-                    filename[i] = 'S';
-                    i++;
-                    if (i > 6)
-                        break;
-                    filename[i] = 'H';
-                    i++;
-                } else {
-                    if ((NAME[k] == 'ч') || (NAME[k] == 'Ч')) {
-                        filename[i] = 'C';
-                        i++;
-                        if (i > 6)
-                            break;
-                        filename[i] = 'H';
-                        i++;
-                    } else {
-                        filename[i] = symbols[2][j];
-                        i++;
-                        break;
-                    }
-                }
+
+        latin = translit_utf8_letter(&NAME[k], &bytes);
+        if (latin != NULL) {
+            for (j = 0; (latin[j] != 0x0) && (i <= 6); j++) {
+                filename[i] = latin[j];
+                i++;
             }
-        if (m == 0)
+            k += bytes;
+            continue;
+        }
+
+        if (((unsigned char) NAME[k] & 0x80) == 0) {
             filename[i] = NAME[k];
-        i++;
-        if (i > 6)
-            break;
+            i++;
+            k++;
+        } else {
+            k++;
+            while ((((unsigned char) NAME[k] & 0xC0) == 0x80) && (NAME[k] != 0x0)) {
+                k++;
+            }
+        }
     }
     filename[8] = '.';
     j = 0;
@@ -1250,9 +1269,9 @@ void savebase(void) {
             fprintf(FILE, "не");
         else
             fprintf(FILE, "  ");
-        sprintf(tmp, "%i%c%i=%i", itog.S[l].numbers[0],
-                symboloperation[itog.S[l].make], itog.S[l].numbers[1],
-                itog.S[l].numbers[2]);
+        snprintf(tmp, sizeof(tmp), "%i%c%i=%i", itog.S[l].numbers[0],
+                 symboloperation[itog.S[l].make], itog.S[l].numbers[1],
+                 itog.S[l].numbers[2]);
         fprintf(FILE, "верно:   %-18s", tmp);
         switch (itog.S[l].numbers[3]) {
             case -7:
@@ -1278,18 +1297,18 @@ void savebase(void) {
             case 7:
             case 8:
             case 9:
-                sprintf(tmp, "  прошло %3i секунд\r\n", itog.S[l].percent);
+                snprintf(tmp, sizeof(tmp), "  прошло %3i секунд\r\n", itog.S[l].percent);
                 break;
             case 1:
-                sprintf(tmp, "  прошла %3i секунда\r\n", itog.S[l].percent);
+                snprintf(tmp, sizeof(tmp), "  прошла %3i секунда\r\n", itog.S[l].percent);
                 break;
             case 2:
             case 3:
             case 4:
-                sprintf(tmp, "  прошло %3i секунды\r\n", itog.S[l].percent);
+                snprintf(tmp, sizeof(tmp), "  прошло %3i секунды\r\n", itog.S[l].percent);
                 break;
         }
-        fprintf(FILE, tmp);
+        fprintf(FILE, "%s", tmp);
         l++;
     }
     i = 300;
@@ -1390,7 +1409,7 @@ void visio(void) {
 }
 
 void createvisio(void) {
-    char tmp[50];
+    char tmp[100];
     int i, j, k, l, m;
 
     TextColor(YELLOW);
@@ -1470,7 +1489,7 @@ void createvisio(void) {
     }
     if (m != 0) {
         k /= m;
-        sprintf(tmp, "Время:  лучшее - %i, худшее - %i, среднее - %i", i, j, k);
+        snprintf(tmp, sizeof(tmp), "Время:  лучшее - %i, худшее - %i, среднее - %i", i, j, k);
         m = 80 - strlen(tmp) - 5;
         CprintXY(m, 25, tmp);
     }
@@ -1539,22 +1558,14 @@ void refreshvisio(void) {
         CprintXY(52, l + 13, tmp);
     }
     TextColor(YELLOW);
-    tmp[0] = 'е';
-    tmp[1] = 'щ';
-    tmp[2] = 'е';
-    tmp[3] = 0x0;
-    tmp[4] = ' ';
-    tmp[5] = ' ';
-    tmp[6] = ' ';
-    tmp[7] = 0x0;
     if (Nvisio > 0)
-        CprintXY(50, 12, tmp);
+        CprintXY(50, 12, "еще");
     else
-        CprintXY(50, 12, &tmp[4]);
+        CprintXY(50, 12, "   ");
     if ((Nvisio + 11) < itog.realnumber)
-        CprintXY(50, 24, tmp);
+        CprintXY(50, 24, "еще");
     else
-        CprintXY(50, 24, &tmp[4]);
+        CprintXY(50, 24, "   ");
 }
 
 void errorsound(void) {

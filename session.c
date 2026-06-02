@@ -53,7 +53,7 @@ void run_training_session(void) {
             number = kk;
         }
         switch (number) {
-            case 0:
+            case 0: // operation +
             newadd:
                 result = dos_random(app_settings[6] - app_settings[5]) + app_settings[5];
                 arg1 = dos_random(result);
@@ -61,7 +61,7 @@ void run_training_session(void) {
                 if ((arg1 == 0) || (arg2 == 0) || (result == 0))
                     goto newadd;
                 break;
-            case 1:
+            case 1: // operation -
             newsub:
                 arg1 = dos_random(app_settings[6] - app_settings[5]) + app_settings[5];
                 arg2 = dos_random(arg1);
@@ -69,7 +69,7 @@ void run_training_session(void) {
                 if ((arg1 == 0) || (arg2 == 0) || (result == 0))
                     goto newsub;
                 break;
-            case 2:
+            case 2: // operation *
             newresult:
                 result = dos_random(app_settings[6] - app_settings[5]) + app_settings[5];
                 arg1 = dos_random(result);
@@ -99,8 +99,8 @@ void run_training_session(void) {
                 if ((arg1 == 1) || (arg2 == 1) || (result == 1))
                     goto newresult;
                 break;
-            case 3:
-            case 4:
+            case 3: // operation /
+            case 4: // operation :
             newarg1:
                 arg1 = dos_random(app_settings[6] - app_settings[5]) + app_settings[5];
                 arg2 = dos_random(arg1 / 2) + 1;

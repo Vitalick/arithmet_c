@@ -33,7 +33,7 @@ void sound(unsigned int frequency) {
 void nosound(void) {
 }
 
-void getdate(struct date *date) {
+void dos_getdate(struct date *date) {
     time_t now;
     struct tm *local;
 

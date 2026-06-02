@@ -35,7 +35,7 @@ int dos_random(int max);
 void delay(unsigned int ms);
 void sound(unsigned int frequency);
 void nosound(void);
-void getdate(struct date *date);
+void dos_getdate(struct date *date);
 void gettime(struct time *time);
 void getftime(FILE *file, struct ftime *ftime);
 

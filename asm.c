@@ -354,7 +354,7 @@ void _Time(struct time *TTT) {
 // Получение реальной даты
 //==========================================
 void _Date(struct date *DDD) {
-    getdate(DDD);
+    dos_getdate(DDD);
 }
 
 // Установка адреса прерыванмя

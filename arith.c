@@ -478,7 +478,7 @@ void createscreen(void) {
     TextColor(GREEN);
     title_x = centered_screen_x("У С Т Н Ы Й    С Ч Е Т");
     CprintXY(title_x, 1, "У С Т Н Ы Й    С Ч Е Т");
-    CprintCentered(2, "==== версия 1.2.2 ====");
+    CprintCentered(2, "==== версия 1.2.3 ====");
     CprintXY(title_x + 1, 3, "ВАН");
     CprintXY(title_x + 17, 3, "1999");
     TextColor(LIGHTCYAN);
@@ -1327,7 +1327,7 @@ void savebase(void) {
         }
     }
     FILE = fopen(filename, "wb");
-    getdate(&D);
+    dos_getdate(&D);
     gettime(&T);
     fprintf(FILE, "Имя: %s     дата: %2i.%02i.%02i  время: %2i:%02i:%02i\r\n",
             itog.name, ASCII(D.da_day), ASCII(D.da_mon), D.da_year,
